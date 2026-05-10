@@ -648,8 +648,8 @@ function buildMonthNav(){
   const today=new Date();
   const curY=today.getFullYear(),curM=today.getMonth();
   const yearsSet=new Set();
-  // Always show 2024 through 2030 for long-term planning
-  for(let y=2024;y<=2030;y++)yearsSet.add(y);
+  // Show 2026 through 2030 for long-term planning
+  for(let y=2026;y<=2030;y++)yearsSet.add(y);
   transactions.forEach(tx=>{const d=new Date(tx.date);yearsSet.add(d.getFullYear());});
   const years=Array.from(yearsSet).sort();
   document.getElementById('year-tabs').innerHTML=years.map(y=>`<button class="year-tab ${y===viewYear?'active':''}" onclick="setViewYear(${y})">${y}</button>`).join('');
