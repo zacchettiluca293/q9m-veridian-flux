@@ -9,583 +9,741 @@
 <meta name="theme-color" content="#0a0a0a">
 <title>Finance OS</title>
 <style>
-  :root {
-    --bg: #0a0a0a;
-    --bg2: #141414;
-    --bg3: #1e1e1e;
-    --bg4: #282828;
-    --border: rgba(255,255,255,0.08);
-    --border2: rgba(255,255,255,0.14);
-    --text: #f0f0f0;
-    --text2: #888;
-    --text3: #555;
-    --green: #1db954;
-    --red: #e8453c;
-    --blue: #3b82f6;
-    --amber: #f59e0b;
-    --radius: 12px;
-    --radius-sm: 8px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; overflow: hidden; }
-  .app { display: flex; flex-direction: column; height: 100vh; height: -webkit-fill-available; max-width: 430px; margin: 0 auto; }
-  .screen { display: none; flex: 1; overflow-y: auto; padding: 20px 16px 100px; }
-  .screen.active { display: block; }
-  .nav { display: flex; justify-content: space-around; background: var(--bg2); border-top: 0.5px solid var(--border); padding: 8px 0 20px; flex-shrink: 0; }
-  .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; cursor: pointer; padding: 4px 16px; }
-  .nav-icon { font-size: 20px; line-height: 1; }
-  .nav-label { font-size: 10px; color: var(--text2); letter-spacing: 0.02em; }
-  .nav-btn.active .nav-label { color: var(--green); }
-  .nav-btn.active .nav-icon { filter: brightness(1.5); }
-  .screen-header { margin-bottom: 24px; }
-  .screen-title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
-  .screen-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
-  .card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
-  .card-title { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
-  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-  .metric { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 14px; }
-  .metric-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
-  .metric-value { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; }
-  .green { color: var(--green); }
-  .red { color: var(--red); }
-  .blue { color: var(--blue); }
-  .amber { color: var(--amber); }
-  label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 6px; }
-  input, select, textarea { width: 100%; background: var(--bg3); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); color: var(--text); font-size: 16px; padding: 12px 14px; margin-bottom: 12px; appearance: none; -webkit-appearance: none; }
-  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--green); }
-  select option { background: var(--bg3); }
-  textarea { resize: none; height: 72px; font-family: inherit; }
-  .btn { width: 100%; padding: 14px; border-radius: var(--radius-sm); border: none; font-size: 15px; font-weight: 600; cursor: pointer; letter-spacing: -0.2px; }
-  .btn-primary { background: var(--green); color: #000; }
-  .btn-secondary { background: var(--bg3); color: var(--text); border: 0.5px solid var(--border2); }
-  .toggle-row { display: flex; background: var(--bg3); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 16px; }
-  .toggle-btn { flex: 1; padding: 9px; border: none; border-radius: 6px; background: none; color: var(--text2); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
-  .toggle-btn.active { background: var(--bg); color: var(--text); }
-  .toggle-btn.active.expense { color: var(--red); }
-  .toggle-btn.active.income { color: var(--green); }
-  .row { display: flex; gap: 10px; }
-  .row > div { flex: 1; }
-  .amort-check-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 12px; background: var(--bg3); border-radius: var(--radius-sm); border: 0.5px solid var(--border); }
-  .amort-check-row label { margin: 0; font-size: 13px; color: var(--text2); flex: 1; }
-  .amort-check-row input[type=checkbox] { width: 18px; height: 18px; margin: 0; accent-color: var(--green); flex-shrink: 0; }
-  .amort-extra { display: none; }
-  .amort-extra.visible { display: block; }
-  .tx-item { padding: 12px 0; border-bottom: 0.5px solid var(--border); }
-  .tx-item:last-child { border-bottom: none; }
-  .tx-top { display: flex; justify-content: space-between; align-items: flex-start; }
-  .tx-name { font-size: 14px; font-weight: 500; }
-  .tx-amount { font-size: 14px; font-weight: 600; }
-  .tx-bottom { display: flex; justify-content: space-between; margin-top: 3px; }
-  .tx-meta { font-size: 11px; color: var(--text2); }
-  .tx-desc { font-size: 12px; color: var(--text3); margin-top: 3px; font-style: italic; }
-  .pill { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 99px; background: var(--bg4); color: var(--text2); margin-left: 6px; }
-  .pill.spread { background: rgba(59,130,246,0.15); color: var(--blue); }
-  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .bar-cat { font-size: 12px; color: var(--text2); width: 90px; flex-shrink: 0; }
-  .bar-track { flex: 1; height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 2px; }
-  .bar-amt { font-size: 12px; color: var(--text); width: 56px; text-align: right; flex-shrink: 0; }
-  .asset-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 0.5px solid var(--border); }
-  .asset-row:last-child { border-bottom: none; }
-  .asset-left { display: flex; align-items: center; gap: 10px; }
-  .asset-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .asset-name { font-size: 14px; }
-  .asset-pct { font-size: 11px; color: var(--text2); margin-top: 1px; }
-  .asset-val { font-size: 15px; font-weight: 600; }
-  .proj-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
-  .proj-row:last-child { border-bottom: none; }
-  .proj-year { font-size: 13px; color: var(--text2); }
-  .proj-val { font-size: 13px; font-weight: 600; }
-  .slider-block { margin-bottom: 18px; }
-  .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-  .slider-label { font-size: 13px; color: var(--text2); }
-  .slider-input { width: 100px; background: var(--bg3); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); color: var(--text); font-size: 14px; font-weight: 600; padding: 5px 10px; text-align: right; margin-bottom: 0; }
-  .slider-input:focus { border-color: var(--green); outline: none; }
-  input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; background: var(--bg4); border-radius: 2px; padding: 0; margin-bottom: 0; border: none; }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--green); cursor: pointer; }
-  .retire-hero { text-align: center; padding: 20px 0 8px; }
-  .retire-year { font-size: 52px; font-weight: 700; letter-spacing: -2px; color: var(--green); }
-  .retire-age { font-size: 16px; color: var(--text2); margin-top: 4px; }
-  .retire-target { font-size: 12px; color: var(--text3); margin-top: 8px; }
-  .insight-box { background: var(--bg3); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 10px; font-size: 13px; line-height: 1.6; color: var(--text2); }
-  .insight-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
-  .tag-good { color: var(--green); }
-  .tag-warn { color: var(--amber); }
-  .tag-info { color: var(--blue); }
-  .empty { font-size: 13px; color: var(--text3); text-align: center; padding: 20px 0; }
-  .nw-hero { margin-bottom: 4px; }
-  .nw-total { font-size: 38px; font-weight: 700; letter-spacing: -1px; }
-  .success-flash { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--green); color: #000; font-size: 13px; font-weight: 600; padding: 10px 20px; border-radius: 99px; z-index: 999; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
-  .success-flash.show { opacity: 1; }
-  .divider { height: 0.5px; background: var(--border); margin: 16px 0; }
-  .api-note { font-size: 11px; color: var(--text3); text-align: center; margin-top: 8px; }
+  :root{--bg:#0a0a0a;--bg2:#141414;--bg3:#1e1e1e;--bg4:#282828;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);--text:#f0f0f0;--text2:#888;--text3:#555;--green:#1db954;--red:#e8453c;--blue:#3b82f6;--amber:#f59e0b;--radius:12px;--radius-sm:8px;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;overflow:hidden;}
+  .app{display:flex;flex-direction:column;height:100vh;height:-webkit-fill-available;max-width:430px;margin:0 auto;}
+  .screen{display:none;flex:1;overflow-y:auto;padding:20px 16px 100px;}
+  .screen.active{display:block;}
+  .nav{display:flex;justify-content:space-around;background:var(--bg2);border-top:0.5px solid var(--border);padding:8px 0 20px;flex-shrink:0;}
+  .nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:4px 8px;}
+  .nav-icon{font-size:18px;line-height:1;}
+  .nav-label{font-size:9px;color:var(--text2);letter-spacing:0.02em;}
+  .nav-btn.active .nav-label{color:var(--green);}
+  .screen-header{margin-bottom:20px;}
+  .screen-title{font-size:28px;font-weight:700;letter-spacing:-0.5px;}
+  .screen-sub{font-size:13px;color:var(--text2);margin-top:2px;}
+  .card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+  .card-title{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;}
+  .metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .metric{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:14px;}
+  .metric-label{font-size:11px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;}
+  .metric-value{font-size:20px;font-weight:600;letter-spacing:-0.5px;}
+  .green{color:var(--green);}.red{color:var(--red);}.blue{color:var(--blue);}.amber{color:var(--amber);}
+  label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;}
+  input,select,textarea{width:100%;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:16px;padding:12px 14px;margin-bottom:12px;appearance:none;-webkit-appearance:none;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);}
+  select option{background:var(--bg3);}
+  textarea{resize:none;height:72px;font-family:inherit;}
+  .btn{width:100%;padding:14px;border-radius:var(--radius-sm);border:none;font-size:15px;font-weight:600;cursor:pointer;}
+  .btn-primary{background:var(--green);color:#000;}
+  .btn-secondary{background:var(--bg3);color:var(--text);border:0.5px solid var(--border2);}
+  .btn-sm{padding:7px 12px;font-size:12px;width:auto;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;}
+  .toggle-row{display:flex;background:var(--bg3);border-radius:var(--radius-sm);padding:3px;margin-bottom:16px;}
+  .toggle-btn{flex:1;padding:9px;border:none;border-radius:6px;background:none;color:var(--text2);font-size:14px;font-weight:500;cursor:pointer;}
+  .toggle-btn.active{background:var(--bg);color:var(--text);}
+  .toggle-btn.active.expense{color:var(--red);}
+  .toggle-btn.active.income{color:var(--green);}
+  .row{display:flex;gap:10px;}.row>div{flex:1;}
+  .amort-check-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:12px;background:var(--bg3);border-radius:var(--radius-sm);border:0.5px solid var(--border);}
+  .amort-check-row label{margin:0;font-size:13px;color:var(--text2);flex:1;}
+  .amort-check-row input[type=checkbox]{width:18px;height:18px;margin:0;accent-color:var(--green);flex-shrink:0;}
+  .amort-extra{display:none;}.amort-extra.visible{display:block;}
+  .tx-item{padding:12px 0;border-bottom:0.5px solid var(--border);}.tx-item:last-child{border-bottom:none;}
+  .tx-top{display:flex;justify-content:space-between;align-items:flex-start;}
+  .tx-name{font-size:14px;font-weight:500;}.tx-amount{font-size:14px;font-weight:600;}
+  .tx-desc{font-size:12px;color:var(--text3);margin-top:3px;font-style:italic;}
+  .tx-meta{font-size:11px;color:var(--text2);}
+  .pill{display:inline-block;font-size:10px;padding:2px 7px;border-radius:99px;background:var(--bg4);color:var(--text2);margin-left:5px;}
+  .pill.etf{background:rgba(29,185,84,0.12);color:var(--green);}
+  .pill.stock{background:rgba(59,130,246,0.12);color:var(--blue);}
+  .pill.spread{background:rgba(59,130,246,0.15);color:var(--blue);}
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .bar-cat{font-size:12px;color:var(--text2);width:90px;flex-shrink:0;}
+  .bar-track{flex:1;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:2px;}
+  .bar-amt{font-size:12px;color:var(--text);width:56px;text-align:right;flex-shrink:0;}
+  .asset-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:0.5px solid var(--border);}
+  .asset-row:last-child{border-bottom:none;}
+  .asset-left{display:flex;align-items:center;gap:10px;}
+  .asset-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .asset-name{font-size:14px;}.asset-pct{font-size:11px;color:var(--text2);margin-top:1px;}
+  .asset-val{font-size:15px;font-weight:600;}
+  .proj-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);}
+  .proj-row:last-child{border-bottom:none;}
+  .proj-year{font-size:13px;color:var(--text2);}.proj-val{font-size:13px;font-weight:600;}
+  .slider-block{margin-bottom:18px;}
+  .slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .slider-label{font-size:13px;color:var(--text2);}
+  .slider-input{width:110px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-weight:600;padding:5px 10px;text-align:right;margin-bottom:0;}
+  .slider-input:focus{border-color:var(--green);outline:none;}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:4px;background:var(--bg4);border-radius:2px;padding:0;margin-bottom:0;border:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--green);cursor:pointer;}
+  .retire-hero{text-align:center;padding:20px 0 8px;}
+  .retire-year{font-size:52px;font-weight:700;letter-spacing:-2px;color:var(--green);}
+  .retire-age{font-size:16px;color:var(--text2);margin-top:4px;}
+  .retire-target{font-size:12px;color:var(--text3);margin-top:8px;}
+  .insight-box{background:var(--bg3);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px;font-size:13px;line-height:1.6;color:var(--text2);}
+  .insight-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;}
+  .tag-good{color:var(--green);}.tag-warn{color:var(--amber);}.tag-info{color:var(--blue);}
+  .empty{font-size:13px;color:var(--text3);text-align:center;padding:20px 0;}
+  .nw-total{font-size:38px;font-weight:700;letter-spacing:-1px;}
+  .divider{height:0.5px;background:var(--border);margin:16px 0;}
+  .success-flash{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;font-size:13px;font-weight:600;padding:10px 20px;border-radius:99px;z-index:999;opacity:0;transition:opacity 0.2s;pointer-events:none;}
+  .success-flash.show{opacity:1;}
+  .api-note{font-size:11px;color:var(--text3);text-align:center;margin-top:8px;}
+  /* Portfolio specific */
+  .port-stat{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;}
+  .port-stat-label{font-size:13px;color:var(--text2);}
+  .port-stat-val{font-size:15px;font-weight:600;}
+  .port-headline{padding:8px 0 4px;}
+  .port-current-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;}
+  .port-current-val{font-size:36px;font-weight:700;letter-spacing:-1px;margin-top:4px;}
+  .port-gain-line{font-size:14px;font-weight:600;margin-top:6px;}
+  .split-bar{height:8px;border-radius:4px;background:var(--bg4);overflow:hidden;display:flex;margin:10px 0 6px;}
+  .split-etf{height:100%;background:var(--green);}
+  .split-stock{height:100%;background:var(--blue);}
+  .split-legend{display:flex;justify-content:space-between;font-size:12px;}
+  .split-legend-item{display:flex;align-items:center;gap:6px;color:var(--text2);}
+  .split-dot{width:8px;height:8px;border-radius:50%;}
+  .pos-filter{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+  .filter-btn{padding:5px 12px;border-radius:99px;border:0.5px solid var(--border2);background:none;color:var(--text2);font-size:12px;cursor:pointer;}
+  .filter-btn.active{background:var(--green);color:#000;border-color:var(--green);}
+  .pos-item{padding:14px 0;border-bottom:0.5px solid var(--border);cursor:pointer;}
+  .pos-item:last-child{border-bottom:none;}
+  .pos-item:active{background:var(--bg3);}
+  .pos-top{display:flex;justify-content:space-between;align-items:flex-start;}
+  .pos-sym{font-size:15px;font-weight:700;letter-spacing:-0.2px;}
+  .pos-val{font-size:15px;font-weight:600;}
+  .pos-bot{display:flex;justify-content:space-between;margin-top:5px;}
+  .pos-detail{font-size:11px;color:var(--text2);}
+  .pos-pnl{font-size:12px;font-weight:600;}
+  .pos-edit{display:none;margin-top:10px;padding:12px;background:var(--bg3);border-radius:var(--radius-sm);}
+  .pos-edit.visible{display:block;}
+  .pos-edit-row{display:flex;gap:8px;align-items:flex-end;}
+  .pos-edit-row > div{flex:1;}
+  .pos-edit input{margin-bottom:0;font-size:14px;padding:8px 10px;}
+  .pos-edit-btn{padding:9px 14px;font-size:13px;background:var(--green);color:#000;border:none;border-radius:var(--radius-sm);cursor:pointer;font-weight:600;}
+  .csv-upload{display:none;}
+  .info-banner{padding:10px 12px;background:rgba(59,130,246,0.08);border:0.5px solid rgba(59,130,246,0.2);border-radius:var(--radius-sm);font-size:12px;color:var(--blue);margin-bottom:12px;line-height:1.5;}
 </style>
 </head>
 <body>
 <div class="app">
 
-  <div id="screen-log" class="screen active">
-    <div class="screen-header">
-      <div class="screen-title">Log</div>
-      <div class="screen-sub">Record every euro. Build clarity.</div>
-    </div>
-    <div class="toggle-row">
-      <button class="toggle-btn active expense" onclick="setType('expense',this)">Expense</button>
-      <button class="toggle-btn income" onclick="setType('income',this)">Income</button>
-    </div>
-    <label>Amount (€)</label>
-    <input id="tx-amount" type="number" inputmode="decimal" placeholder="0.00">
-    <label>Description</label>
-    <textarea id="tx-desc" placeholder="e.g. Groceries at Rewe, weekly shop"></textarea>
-    <div class="row">
-      <div>
-        <label>Category</label>
-        <select id="tx-cat">
-          <optgroup label="Essentials">
-            <option>Housing</option>
-            <option>Groceries</option>
-            <option>Transport</option>
-            <option>Health</option>
-            <option>Pet</option>
-          </optgroup>
-          <optgroup label="Lifestyle">
-            <option>Dining Out</option>
-            <option>Travel</option>
-            <option>Entertainment</option>
-            <option>Shopping</option>
-            <option>Personal Care</option>
-          </optgroup>
-          <optgroup label="Financial">
-            <option>IBKR</option>
-            <option>Sobha</option>
-            <option>Crypto</option>
-            <option>Savings</option>
-          </optgroup>
-          <optgroup label="One-offs">
-            <option>Gift</option>
-            <option>Education</option>
-            <option>Other</option>
-          </optgroup>
-        </select>
-      </div>
-      <div>
-        <label>Date</label>
-        <input id="tx-date" type="date">
-      </div>
-    </div>
-    <div class="amort-check-row">
-      <input type="checkbox" id="amort-check" onchange="toggleAmort()">
-      <label for="amort-check">Spread this expense over multiple months</label>
-    </div>
-    <div class="amort-extra" id="amort-extra">
-      <label>Spread over how many months?</label>
-      <input id="amort-months" type="number" inputmode="numeric" placeholder="e.g. 4" min="2" max="36">
-    </div>
-    <button class="btn btn-primary" onclick="logTransaction()">Add entry</button>
+<div id="screen-log" class="screen active">
+  <div class="screen-header"><div class="screen-title">Log</div><div class="screen-sub">Record every euro.</div></div>
+  <div class="toggle-row">
+    <button class="toggle-btn active expense" onclick="setType('expense',this)">Expense</button>
+    <button class="toggle-btn income" onclick="setType('income',this)">Income</button>
   </div>
-
-  <div id="screen-overview" class="screen">
-    <div class="screen-header">
-      <div class="screen-title" id="ov-month-title">This month</div>
-      <div class="screen-sub">Your personal P&L</div>
-    </div>
-    <div class="metric-grid">
-      <div class="metric"><div class="metric-label">Income</div><div class="metric-value green" id="ov-income">€0</div></div>
-      <div class="metric"><div class="metric-label">Spent</div><div class="metric-value red" id="ov-spent">€0</div></div>
-      <div class="metric"><div class="metric-label">Net</div><div class="metric-value" id="ov-net">€0</div></div>
-      <div class="metric"><div class="metric-label">Savings rate</div><div class="metric-value" id="ov-sr">—</div></div>
-    </div>
-    <div class="card">
-      <div class="card-title">By category</div>
-      <div id="cat-bars"><div class="empty">No expenses yet</div></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Recent entries</div>
-      <div id="tx-list"><div class="empty">Nothing logged yet</div></div>
-    </div>
-    <button class="btn btn-secondary" style="margin-bottom:10px;" onclick="getInsight()">Ask Claude for insight ↗</button>
-    <div id="insight-area"></div>
-    <p class="api-note">Claude insights require an Anthropic API key (set in Settings)</p>
-  </div>
-
-  <div id="screen-wealth" class="screen">
-    <div class="screen-header">
-      <div class="screen-title">Wealth</div>
-      <div class="screen-sub">All assets. One view.</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Net worth</div>
-      <div class="nw-hero">
-        <div class="nw-total" id="nw-total">€0</div>
-      </div>
-      <div class="divider"></div>
-      <div id="asset-list"><div class="empty">Add your assets below</div></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Update assets</div>
-      <div class="row">
-        <div><label>Dubai flat (€)</label><input id="in-flat" type="number" inputmode="decimal" placeholder="e.g. 280000"></div>
-        <div><label>IBKR / ETF (€)</label><input id="in-broker" type="number" inputmode="decimal" placeholder="e.g. 18000"></div>
-      </div>
-      <div class="row">
-        <div><label>Crypto (€)</label><input id="in-crypto" type="number" inputmode="decimal" placeholder="e.g. 5000"></div>
-        <div><label>Cash (€)</label><input id="in-cash" type="number" inputmode="decimal" placeholder="e.g. 8000"></div>
-      </div>
-      <button class="btn btn-primary" onclick="updateWealth()">Save snapshot</button>
-    </div>
-    <div class="card" id="proj-card">
-      <div class="card-title">VWCE projection (7% annualized)</div>
-      <div class="empty" id="proj-placeholder">Add your IBKR value above to see projections</div>
-      <div id="proj-rows"></div>
-    </div>
-  </div>
-
-  <div id="screen-freedom" class="screen">
-    <div class="screen-header">
-      <div class="screen-title">Freedom</div>
-      <div class="screen-sub">When can you stop working?</div>
-    </div>
-    <div class="card">
-      <div class="retire-hero">
-        <div class="retire-year" id="ret-year">—</div>
-        <div class="retire-age" id="ret-age-result"></div>
-        <div class="retire-target" id="ret-target"></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="slider-block">
-        <div class="slider-header"><span class="slider-label">Monthly income in retirement (€)</span><input class="slider-input" id="sl-income-val" type="number" inputmode="decimal" value="4000" oninput="syncSlider('sl-income','sl-income-val');updateFreedom()"></div>
-        <input type="range" min="1000" max="50000" step="500" value="4000" id="sl-income" oninput="syncInput('sl-income','sl-income-val');updateFreedom()">
-      </div>
-      <div class="slider-block">
-        <div class="slider-header"><span class="slider-label">Monthly investment (€)</span><input class="slider-input" id="sl-invest-val" type="number" inputmode="decimal" value="500" oninput="syncSlider('sl-invest','sl-invest-val');updateFreedom()"></div>
-        <input type="range" min="100" max="20000" step="50" value="500" id="sl-invest" oninput="syncInput('sl-invest','sl-invest-val');updateFreedom()">
-      </div>
-      <div class="slider-block">
-        <div class="slider-header"><span class="slider-label">Your age today</span><input class="slider-input" id="sl-age-val" type="number" inputmode="numeric" value="32" oninput="syncSlider('sl-age','sl-age-val');updateFreedom()"></div>
-        <input type="range" min="20" max="65" step="1" value="32" id="sl-age" oninput="syncInput('sl-age','sl-age-val');updateFreedom()">
-      </div>
-      <div class="slider-block">
-        <div class="slider-header"><span class="slider-label">Current investable assets (€)</span><input class="slider-input" id="sl-assets-val" type="number" inputmode="decimal" value="18000" oninput="syncSlider('sl-assets','sl-assets-val');updateFreedom()"></div>
-        <input type="range" min="0" max="2000000" step="1000" value="18000" id="sl-assets" oninput="syncInput('sl-assets','sl-assets-val');updateFreedom()">
-      </div>
-      <div class="slider-block">
-        <div class="slider-header"><span class="slider-label">Expected annual return (%)</span><input class="slider-input" id="sl-rate-val" type="number" inputmode="decimal" value="7" step="0.5" oninput="syncSlider('sl-rate','sl-rate-val');updateFreedom()"></div>
-        <input type="range" min="1" max="15" step="0.5" value="7" id="sl-rate" oninput="syncInput('sl-rate','sl-rate-val');updateFreedom()">
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Year by year projection</div>
-      <div id="freedom-proj"></div>
-    </div>
-  </div>
-
-  <div id="screen-settings" class="screen">
-    <div class="screen-header">
-      <div class="screen-title">Settings</div>
-      <div class="screen-sub">Configure your Finance OS</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Claude API key</div>
-      <label>Paste your Anthropic API key to enable AI insights</label>
-      <input id="api-key-input" type="password" placeholder="sk-ant-...">
-      <button class="btn btn-primary" onclick="saveApiKey()">Save key</button>
-      <p class="api-note" style="margin-top:8px;">Your key is stored locally on your device only. Never shared.</p>
-    </div>
-    <div class="card">
-      <div class="card-title">Currency</div>
-      <select id="currency-select" onchange="saveCurrency()">
-        <option value="EUR" selected>EUR (€)</option>
-        <option value="AED">AED (د.إ)</option>
+  <label>Amount (€)</label>
+  <input id="tx-amount" type="number" inputmode="decimal" placeholder="0.00">
+  <label>Description</label>
+  <textarea id="tx-desc" placeholder="e.g. Groceries at Rewe, weekly shop"></textarea>
+  <div class="row">
+    <div>
+      <label>Category</label>
+      <select id="tx-cat">
+        <optgroup label="Essentials"><option>Housing</option><option>Groceries</option><option>Transport</option><option>Health</option><option>Pet</option></optgroup>
+        <optgroup label="Lifestyle"><option>Dining Out</option><option>Travel</option><option>Entertainment</option><option>Shopping</option><option>Personal Care</option></optgroup>
+        <optgroup label="Financial"><option>IBKR</option><option>Sobha</option><option>Crypto</option><option>Savings</option></optgroup>
+        <optgroup label="One-offs"><option>Gift</option><option>Education</option><option>Other</option></optgroup>
       </select>
     </div>
-    <div class="card">
-      <div class="card-title">Data</div>
-      <button class="btn btn-secondary" style="margin-bottom:10px;" onclick="exportData()">Export all data (JSON)</button>
-      <button class="btn btn-secondary" style="color:var(--red);" onclick="clearData()">Clear all data</button>
+    <div><label>Date</label><input id="tx-date" type="date"></div>
+  </div>
+  <div class="amort-check-row">
+    <input type="checkbox" id="amort-check" onchange="toggleAmort()">
+    <label for="amort-check">Spread this expense over multiple months</label>
+  </div>
+  <div class="amort-extra" id="amort-extra">
+    <label>Spread over how many months?</label>
+    <input id="amort-months" type="number" inputmode="numeric" placeholder="e.g. 4" min="2" max="36">
+  </div>
+  <button class="btn btn-primary" onclick="logTransaction()">Add entry</button>
+</div>
+
+<div id="screen-overview" class="screen">
+  <div class="screen-header"><div class="screen-title" id="ov-month-title">This month</div><div class="screen-sub">Your personal P&L</div></div>
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-label">Income</div><div class="metric-value green" id="ov-income">€0</div></div>
+    <div class="metric"><div class="metric-label">Spent</div><div class="metric-value red" id="ov-spent">€0</div></div>
+    <div class="metric"><div class="metric-label">Net</div><div class="metric-value" id="ov-net">€0</div></div>
+    <div class="metric"><div class="metric-label">Savings rate</div><div class="metric-value" id="ov-sr">—</div></div>
+  </div>
+  <div class="card"><div class="card-title">By category</div><div id="cat-bars"><div class="empty">No expenses yet</div></div></div>
+  <div class="card"><div class="card-title">Recent entries</div><div id="tx-list"><div class="empty">Nothing logged yet</div></div></div>
+  <button class="btn btn-secondary" style="margin-bottom:10px;" onclick="getInsight()">Ask Claude for insight ↗</button>
+  <div id="insight-area"></div>
+  <p class="api-note">Requires Anthropic API key (More tab)</p>
+</div>
+
+<div id="screen-portfolio" class="screen">
+  <div class="screen-header"><div class="screen-title">Portfolio</div><div class="screen-sub" id="port-updated">—</div></div>
+
+  <div class="card">
+    <div class="port-headline">
+      <div class="port-current-label">Current value</div>
+      <div class="port-current-val" id="port-current">—</div>
+      <div class="port-gain-line" id="port-gain">—</div>
+    </div>
+    <div class="divider"></div>
+    <div class="port-stat"><span class="port-stat-label">Total invested (cost basis)</span><span class="port-stat-val" id="port-cost">—</span></div>
+    <div class="port-stat"><span class="port-stat-label">Unrealized gain/loss</span><span class="port-stat-val" id="port-pnl">—</span></div>
+    <div class="port-stat"><span class="port-stat-label">EUR/USD rate used</span><span class="port-stat-val" id="port-fx">1.1786</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Passive vs active split</div>
+    <div class="split-bar"><div class="split-etf" id="split-etf-bar" style="width:0%"></div><div class="split-stock" id="split-stock-bar" style="width:0%"></div></div>
+    <div class="split-legend">
+      <span class="split-legend-item"><span class="split-dot" style="background:var(--green)"></span>ETF: <span id="split-etf-pct" style="color:var(--text);font-weight:600;">—</span></span>
+      <span class="split-legend-item"><span class="split-dot" style="background:var(--blue)"></span>Stocks: <span id="split-stock-pct" style="color:var(--text);font-weight:600;">—</span></span>
     </div>
   </div>
 
-  <nav class="nav">
-    <button class="nav-btn active" onclick="showScreen('log',this)"><span class="nav-icon">✚</span><span class="nav-label">Log</span></button>
-    <button class="nav-btn" onclick="showScreen('overview',this)"><span class="nav-icon">◎</span><span class="nav-label">Overview</span></button>
-    <button class="nav-btn" onclick="showScreen('wealth',this)"><span class="nav-icon">◈</span><span class="nav-label">Wealth</span></button>
-    <button class="nav-btn" onclick="showScreen('freedom',this)"><span class="nav-icon">◇</span><span class="nav-label">Freedom</span></button>
-    <button class="nav-btn" onclick="showScreen('settings',this)"><span class="nav-icon">⚙</span><span class="nav-label">Settings</span></button>
-  </nav>
+  <div class="card">
+    <div class="info-banner">Tap any position to update its current price. Or import a fresh IBKR CSV to refresh everything at once.</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div class="card-title" style="margin:0;">Positions (<span id="pos-count">0</span>)</div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-sm" onclick="document.getElementById('csv-import').click()">Import CSV</button>
+      </div>
+      <input type="file" id="csv-import" class="csv-upload" accept=".csv" onchange="importCSV(event)">
+    </div>
+    <div class="pos-filter">
+      <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+      <button class="filter-btn" data-filter="ETF" onclick="setFilter('ETF')">ETF</button>
+      <button class="filter-btn" data-filter="Stock" onclick="setFilter('Stock')">Stocks</button>
+      <button class="filter-btn" data-filter="gain" onclick="setFilter('gain')">Gaining</button>
+      <button class="filter-btn" data-filter="loss" onclick="setFilter('loss')">Losing</button>
+    </div>
+    <div id="pos-list"></div>
+  </div>
 </div>
 
-<div class="success-flash" id="flash">Entry saved</div>
+<div id="screen-wealth" class="screen">
+  <div class="screen-header"><div class="screen-title">Wealth</div><div class="screen-sub">All assets. One view.</div></div>
+  <div class="card">
+    <div class="card-title">Net worth</div>
+    <div class="nw-total" id="nw-total">€0</div>
+    <div class="divider"></div>
+    <div id="asset-list"><div class="empty">Add your assets below</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Update assets</div>
+    <div class="row">
+      <div><label>Dubai flat (€)</label><input id="in-flat" type="number" inputmode="decimal" placeholder="e.g. 280000"></div>
+      <div><label>IBKR portfolio (€)</label><input id="in-broker" type="number" inputmode="decimal" placeholder="Auto-synced"></div>
+    </div>
+    <div class="row">
+      <div><label>Crypto (€)</label><input id="in-crypto" type="number" inputmode="decimal" placeholder="e.g. 7500"></div>
+      <div><label>Cash (€)</label><input id="in-cash" type="number" inputmode="decimal" placeholder="e.g. 8000"></div>
+    </div>
+    <button class="btn btn-primary" onclick="updateWealth()">Save snapshot</button>
+  </div>
+  <div class="card">
+    <div class="card-title">IBKR projection (7% annualized + €500/mo)</div>
+    <div class="empty" id="proj-placeholder">Add IBKR value to see projections</div>
+    <div id="proj-rows"></div>
+  </div>
+</div>
+
+<div id="screen-freedom" class="screen">
+  <div class="screen-header"><div class="screen-title">Freedom</div><div class="screen-sub">When can you stop working?</div></div>
+  <div class="card"><div class="retire-hero"><div class="retire-year" id="ret-year">—</div><div class="retire-age" id="ret-age-result"></div><div class="retire-target" id="ret-target"></div></div></div>
+  <div class="card">
+    <div class="slider-block">
+      <div class="slider-header"><span class="slider-label">Monthly income in retirement (€)</span><input class="slider-input" id="sl-income-val" type="number" inputmode="decimal" value="4000" oninput="syncSlider('sl-income','sl-income-val');updateFreedom()"></div>
+      <input type="range" min="1000" max="50000" step="500" value="4000" id="sl-income" oninput="syncInput('sl-income','sl-income-val');updateFreedom()">
+    </div>
+    <div class="slider-block">
+      <div class="slider-header"><span class="slider-label">Monthly investment (€)</span><input class="slider-input" id="sl-invest-val" type="number" inputmode="decimal" value="500" oninput="syncSlider('sl-invest','sl-invest-val');updateFreedom()"></div>
+      <input type="range" min="100" max="20000" step="50" value="500" id="sl-invest" oninput="syncInput('sl-invest','sl-invest-val');updateFreedom()">
+    </div>
+    <div class="slider-block">
+      <div class="slider-header"><span class="slider-label">Your age today</span><input class="slider-input" id="sl-age-val" type="number" inputmode="numeric" value="32" oninput="syncSlider('sl-age','sl-age-val');updateFreedom()"></div>
+      <input type="range" min="20" max="65" step="1" value="32" id="sl-age" oninput="syncInput('sl-age','sl-age-val');updateFreedom()">
+    </div>
+    <div class="slider-block">
+      <div class="slider-header"><span class="slider-label">Current investable assets (€)</span><input class="slider-input" id="sl-assets-val" type="number" inputmode="decimal" value="129000" oninput="syncSlider('sl-assets','sl-assets-val');updateFreedom()"></div>
+      <input type="range" min="0" max="2000000" step="1000" value="129000" id="sl-assets" oninput="syncInput('sl-assets','sl-assets-val');updateFreedom()">
+    </div>
+    <div class="slider-block">
+      <div class="slider-header"><span class="slider-label">Expected annual return (%)</span><input class="slider-input" id="sl-rate-val" type="number" inputmode="decimal" value="7" step="0.5" oninput="syncSlider('sl-rate','sl-rate-val');updateFreedom()"></div>
+      <input type="range" min="1" max="15" step="0.5" value="7" id="sl-rate" oninput="syncInput('sl-rate','sl-rate-val');updateFreedom()">
+    </div>
+  </div>
+  <div class="card"><div class="card-title">Year by year projection</div><div id="freedom-proj"></div></div>
+</div>
+
+<div id="screen-settings" class="screen">
+  <div class="screen-header"><div class="screen-title">Settings</div><div class="screen-sub">Configure your Finance OS</div></div>
+  <div class="card">
+    <div class="card-title">Exchange rates</div>
+    <div class="row">
+      <div><label>EUR / USD</label><input id="fx-usd-input" type="number" step="0.0001" inputmode="decimal" placeholder="1.1786"></div>
+      <div><label>EUR / GBP</label><input id="fx-gbp-input" type="number" step="0.0001" inputmode="decimal" placeholder="0.8703"></div>
+    </div>
+    <button class="btn btn-primary" onclick="saveFX()">Save rates</button>
+    <p class="api-note" style="margin-top:8px;">Update these monthly to keep portfolio values accurate.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">Claude API key</div>
+    <label>Enables AI insights in Overview</label>
+    <input id="api-key-input" type="password" placeholder="sk-ant-...">
+    <button class="btn btn-primary" onclick="saveApiKey()">Save key</button>
+    <p class="api-note" style="margin-top:8px;">Stored locally on your device only.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">Currency display</div>
+    <select id="currency-select" onchange="saveCurrency()"><option value="EUR" selected>EUR (€)</option><option value="AED">AED (د.إ)</option></select>
+  </div>
+  <div class="card">
+    <div class="card-title">Data</div>
+    <button class="btn btn-secondary" style="margin-bottom:10px;" onclick="exportData()">Export all data (JSON)</button>
+    <button class="btn btn-secondary" style="color:var(--red);" onclick="clearData()">Clear all data</button>
+    <button class="btn btn-secondary" style="margin-top:10px;" onclick="resetPositions()">Reset portfolio to IBKR May 8 snapshot</button>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="showScreen('log',this)"><span class="nav-icon">✚</span><span class="nav-label">Log</span></button>
+  <button class="nav-btn" onclick="showScreen('overview',this)"><span class="nav-icon">◎</span><span class="nav-label">Overview</span></button>
+  <button class="nav-btn" onclick="showScreen('portfolio',this)"><span class="nav-icon">◈</span><span class="nav-label">Portfolio</span></button>
+  <button class="nav-btn" onclick="showScreen('wealth',this)"><span class="nav-icon">◇</span><span class="nav-label">Wealth</span></button>
+  <button class="nav-btn" onclick="showScreen('freedom',this)"><span class="nav-icon">*</span><span class="nav-label">Freedom</span></button>
+  <button class="nav-btn" onclick="showScreen('settings',this)"><span class="nav-icon">⚙</span><span class="nav-label">More</span></button>
+</nav>
+
+</div>
+<div class="success-flash" id="flash">Saved</div>
 
 <script>
-let txType = 'expense';
-let transactions = JSON.parse(localStorage.getItem('fos_tx') || '[]');
-let wealth = JSON.parse(localStorage.getItem('fos_wealth') || '{"flat":0,"broker":0,"crypto":0,"cash":0}');
-let apiKey = localStorage.getItem('fos_apikey') || '';
-let currency = localStorage.getItem('fos_currency') || 'EUR';
+// ── State ──────────────────────────────────────────────────────────
+let txType='expense';
+let transactions=JSON.parse(localStorage.getItem('fos_tx')||'[]');
+let wealth=JSON.parse(localStorage.getItem('fos_wealth')||'{"flat":0,"broker":0,"crypto":0,"cash":0}');
+let currency=localStorage.getItem('fos_currency')||'EUR';
+let posFilter='all';
+let editingPosition=null;
 
-const sym = () => currency === 'AED' ? 'د.إ' : '€';
-const fmt = (n) => sym() + Math.abs(Math.round(n)).toLocaleString();
+// Exchange rates - user-editable in Settings (defaults match IBKR May 8 2026 statement)
+let eurusd=parseFloat(localStorage.getItem('fos_eurusd'))||1.1786;
+let eurgbp=parseFloat(localStorage.getItem('fos_eurgbp'))||0.8703;
 
-document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
-if (apiKey) document.getElementById('api-key-input').value = apiKey;
+// Seed positions from IBKR statement May 8, 2026 - includes ACTUAL closing prices
+const SEED=[
+  {symbol:"AAPL",qty:6,costPrice:167.1896,costBasis:1003.14,currentPrice:293.32,currency:"USD",type:"Stock"},
+  {symbol:"ABNB",qty:4,costPrice:149.83,costBasis:599.32,currentPrice:141.49,currency:"USD",type:"Stock"},
+  {symbol:"AMZN",qty:67,costPrice:169.2663,costBasis:11340.84,currentPrice:272.68,currency:"USD",type:"Stock"},
+  {symbol:"ASAN",qty:1,costPrice:54.0219,costBasis:54.02,currentPrice:6.63,currency:"USD",type:"Stock"},
+  {symbol:"ASHS",qty:13,costPrice:33.6176,costBasis:437.03,currentPrice:46.2499,currency:"USD",type:"ETF"},
+  {symbol:"BABA",qty:6,costPrice:77.4045,costBasis:464.43,currentPrice:140.06,currency:"USD",type:"Stock"},
+  {symbol:"BLCN",qty:4,costPrice:37.0497,costBasis:148.20,currentPrice:25.61,currency:"USD",type:"ETF"},
+  {symbol:"BLOK",qty:71,costPrice:34.4114,costBasis:2443.21,currentPrice:64.39,currency:"USD",type:"ETF"},
+  {symbol:"BYND",qty:16,costPrice:23.4144,costBasis:374.63,currentPrice:0.8331,currency:"USD",type:"Stock"},
+  {symbol:"CHIQ",qty:41,costPrice:19.3949,costBasis:795.19,currentPrice:19.98,currency:"USD",type:"ETF"},
+  {symbol:"DASH",qty:6,costPrice:82.5967,costBasis:495.58,currentPrice:163.93,currency:"USD",type:"Stock"},
+  {symbol:"GOOG",qty:105,costPrice:130.4713,costBasis:13699.48,currentPrice:397.05,currency:"USD",type:"Stock"},
+  {symbol:"GRAB",qty:196,costPrice:5.603,costBasis:1098.18,currentPrice:3.72,currency:"USD",type:"Stock"},
+  {symbol:"H4ZN",qty:1,costPrice:55.36,costBasis:55.36,currentPrice:60.76,currency:"EUR",type:"ETF"},
+  {symbol:"ICGA",qty:52,costPrice:4.7679,costBasis:247.93,currentPrice:5.075,currency:"EUR",type:"ETF"},
+  {symbol:"IPRP",qty:1,costPrice:32.82,costBasis:32.82,currentPrice:31.03,currency:"EUR",type:"ETF"},
+  {symbol:"KBA",qty:9,costPrice:31.273,costBasis:281.46,currentPrice:33.74,currency:"USD",type:"ETF"},
+  {symbol:"MCHI",qty:6,costPrice:63.9647,costBasis:383.79,currentPrice:58.32,currency:"USD",type:"ETF"},
+  {symbol:"META",qty:31,costPrice:278.1415,costBasis:8622.39,currentPrice:609.63,currency:"USD",type:"Stock"},
+  {symbol:"MSFT",qty:14,costPrice:291.6434,costBasis:4083.01,currentPrice:415.12,currency:"USD",type:"Stock"},
+  {symbol:"PFE",qty:2,costPrice:46.5417,costBasis:93.08,currentPrice:25.68,currency:"USD",type:"Stock"},
+  {symbol:"QQQ",qty:11,costPrice:348.3049,costBasis:3831.35,currentPrice:711.23,currency:"USD",type:"ETF"},
+  {symbol:"SBUX",qty:2,costPrice:102.635,costBasis:205.27,currentPrice:104.93,currency:"USD",type:"Stock"},
+  {symbol:"SHOP",qty:13,costPrice:40.6835,costBasis:528.89,currentPrice:110.41,currency:"USD",type:"Stock"},
+  {symbol:"SPYM",qty:23,costPrice:46.8725,costBasis:1078.07,currentPrice:86.82,currency:"USD",type:"ETF"},
+  {symbol:"STLA",qty:3,costPrice:19.653,costBasis:58.96,currentPrice:7.74,currency:"USD",type:"Stock"},
+  {symbol:"UBER",qty:47,costPrice:41.6779,costBasis:1958.86,currentPrice:75.45,currency:"USD",type:"Stock"},
+  {symbol:"VERS",qty:11,costPrice:32.7599,costBasis:360.36,currentPrice:74.1331,currency:"USD",type:"Stock"},
+  {symbol:"VEUR",qty:6,costPrice:43.4767,costBasis:260.86,currentPrice:48.075,currency:"EUR",type:"ETF"},
+  {symbol:"VGT",qty:8,costPrice:49.4462,costBasis:395.57,currentPrice:112.44,currency:"USD",type:"ETF"},
+  {symbol:"VMID",qty:2,costPrice:30.4097,costBasis:60.82,currentPrice:34.96,currency:"GBP",type:"ETF"},
+  {symbol:"VOO",qty:11,costPrice:368.6193,costBasis:4054.81,currentPrice:678.04,currency:"USD",type:"ETF"},
+  {symbol:"VT",qty:3,costPrice:89.445,costBasis:268.33,currentPrice:155.18,currency:"USD",type:"ETF"},
+  {symbol:"VTI",qty:2,costPrice:195.1725,costBasis:390.34,currentPrice:362.87,currency:"USD",type:"ETF"},
+  {symbol:"VUSA",qty:93,costPrice:87.4084,costBasis:8128.98,currentPrice:118.995,currency:"EUR",type:"ETF"},
+  {symbol:"VUSD",qty:35.7019,costPrice:103.657,costBasis:3700.75,currentPrice:140.14,currency:"USD",type:"ETF"},
+  {symbol:"VWCE",qty:61,costPrice:140.9013,costBasis:8594.98,currentPrice:158.14,currency:"EUR",type:"ETF"}
+];
 
-function setType(t, btn) {
-  txType = t;
-  document.querySelectorAll('.toggle-btn').forEach(b => { b.classList.remove('active'); });
-  btn.classList.add('active');
-}
+const POS_UPDATED_KEY='fos_pos_updated';
+let positions=JSON.parse(localStorage.getItem('fos_positions')||'null')||SEED;
+let posUpdatedAt=localStorage.getItem(POS_UPDATED_KEY)||'May 8, 2026 (IBKR statement)';
 
-function toggleAmort() {
-  document.getElementById('amort-extra').classList.toggle('visible', document.getElementById('amort-check').checked);
-}
+// ── Helpers ────────────────────────────────────────────────────────
+const S=()=>currency==='AED'?'د.إ':'€';
+const fmt=n=>{const num=Math.round(n);return S()+(num<0?'-':'')+Math.abs(num).toLocaleString();};
+const fmtSigned=n=>{const num=Math.round(n);return(num>=0?'+':'-')+S()+Math.abs(num).toLocaleString();};
+const fmtPct=n=>(n>=0?'+':'')+n.toFixed(1)+'%';
 
-function flash(msg) {
-  const el = document.getElementById('flash');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 1800);
-}
+document.getElementById('tx-date').value=new Date().toISOString().split('T')[0];
+const savedKey=localStorage.getItem('fos_apikey');
+if(savedKey)document.getElementById('api-key-input').value=savedKey;
+document.getElementById('fx-usd-input').value=eurusd.toFixed(4);
+document.getElementById('fx-gbp-input').value=eurgbp.toFixed(4);
 
-function logTransaction() {
-  const amount = parseFloat(document.getElementById('tx-amount').value);
-  const desc = document.getElementById('tx-desc').value.trim();
-  const cat = document.getElementById('tx-cat').value;
-  const date = document.getElementById('tx-date').value;
-  const amort = document.getElementById('amort-check').checked;
-  const months = parseInt(document.getElementById('amort-months').value) || 1;
-  if (!amount || amount <= 0) { alert('Please enter an amount.'); return; }
-  const tx = { id: Date.now(), amount, desc, cat, type: txType, date, amort: amort && months > 1, months: amort ? months : 1 };
-  transactions.unshift(tx);
-  localStorage.setItem('fos_tx', JSON.stringify(transactions));
-  document.getElementById('tx-amount').value = '';
-  document.getElementById('tx-desc').value = '';
-  document.getElementById('amort-check').checked = false;
+function flash(msg){const el=document.getElementById('flash');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1800);}
+
+// ── Log tab ────────────────────────────────────────────────────────
+function setType(t,btn){txType=t;document.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+function toggleAmort(){document.getElementById('amort-extra').classList.toggle('visible',document.getElementById('amort-check').checked);}
+function logTransaction(){
+  const amount=parseFloat(document.getElementById('tx-amount').value);
+  const desc=document.getElementById('tx-desc').value.trim();
+  const cat=document.getElementById('tx-cat').value;
+  const date=document.getElementById('tx-date').value;
+  const amort=document.getElementById('amort-check').checked;
+  const months=parseInt(document.getElementById('amort-months').value)||1;
+  if(!amount||amount<=0){alert('Enter an amount.');return;}
+  transactions.unshift({id:Date.now(),amount,desc,cat,type:txType,date,amort:amort&&months>1,months:amort?months:1});
+  localStorage.setItem('fos_tx',JSON.stringify(transactions));
+  document.getElementById('tx-amount').value='';
+  document.getElementById('tx-desc').value='';
+  document.getElementById('amort-check').checked=false;
   document.getElementById('amort-extra').classList.remove('visible');
-  document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('tx-date').value=new Date().toISOString().split('T')[0];
   flash('Entry saved');
 }
 
-function getMonthData(month, year) {
-  let income = 0, spent = 0;
-  const cats = {};
-  const now = new Date();
-  const m = month !== undefined ? month : now.getMonth();
-  const y = year !== undefined ? year : now.getFullYear();
-  transactions.forEach(tx => {
-    const d = new Date(tx.date);
-    let eff = tx.amort ? tx.amount / tx.months : tx.amount;
-    if (tx.amort) {
-      const txMonth = d.getMonth() + d.getFullYear() * 12;
-      const curMonth = m + y * 12;
-      if (curMonth < txMonth || curMonth >= txMonth + tx.months) return;
-    } else {
-      if (d.getMonth() !== m || d.getFullYear() !== y) return;
-    }
-    if (tx.type === 'income') income += eff;
-    else { spent += eff; cats[tx.cat] = (cats[tx.cat] || 0) + eff; }
+// ── Overview tab ───────────────────────────────────────────────────
+function getMonthData(){
+  const now=new Date();const m=now.getMonth(),y=now.getFullYear();
+  let income=0,spent=0;const cats={};
+  transactions.forEach(tx=>{
+    const d=new Date(tx.date);
+    let eff=tx.amort?tx.amount/tx.months:tx.amount;
+    if(tx.amort){const txM=d.getMonth()+d.getFullYear()*12,curM=m+y*12;if(curM<txM||curM>=txM+tx.months)return;}
+    else{if(d.getMonth()!==m||d.getFullYear()!==y)return;}
+    if(tx.type==='income')income+=eff;else{spent+=eff;cats[tx.cat]=(cats[tx.cat]||0)+eff;}
   });
-  return { income, spent, cats };
+  return{income,spent,cats};
+}
+function renderOverview(){
+  const now=new Date();
+  document.getElementById('ov-month-title').textContent=now.toLocaleString('default',{month:'long',year:'numeric'});
+  const{income,spent,cats}=getMonthData();
+  const net=income-spent,sr=income>0?Math.round((net/income)*100):null;
+  document.getElementById('ov-income').textContent=fmt(income);
+  document.getElementById('ov-spent').textContent=fmt(spent);
+  const netEl=document.getElementById('ov-net');
+  netEl.textContent=(net>=0?'+':'-')+S()+Math.abs(Math.round(net)).toLocaleString();
+  netEl.className='metric-value '+(net>=0?'green':'red');
+  const srEl=document.getElementById('ov-sr');
+  srEl.textContent=sr!==null?sr+'%':'—';
+  srEl.className='metric-value '+(sr===null?'':sr>=20?'green':sr>=0?'amber':'red');
+  const cols=['#1db954','#3b82f6','#f59e0b','#e8453c','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+  const sorted=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  const maxV=sorted.length>0?sorted[0][1]:1;
+  document.getElementById('cat-bars').innerHTML=sorted.map(([cat,val],i)=>
+    `<div class="bar-row"><div class="bar-cat">${cat}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((val/maxV)*100)}%;background:${cols[i%cols.length]}"></div></div><div class="bar-amt">${fmt(val)}</div></div>`
+  ).join('')||'<div class="empty">No expenses this month</div>';
+  document.getElementById('tx-list').innerHTML=transactions.slice(0,8).map(tx=>{
+    const d=new Date(tx.date),dateStr=d.toLocaleDateString('default',{day:'numeric',month:'short'});
+    const dispAmt=tx.amort?tx.amount/tx.months:tx.amount;
+    const spread=tx.amort?`<span class="pill spread">/${tx.months}mo</span>`:'';
+    return`<div class="tx-item"><div class="tx-top"><div class="tx-name">${tx.cat}${spread}</div><div class="tx-amount ${tx.type==='income'?'green':'red'}">${tx.type==='income'?'+':'-'}${fmt(dispAmt)}</div></div>${tx.desc?`<div class="tx-desc">${tx.desc}</div>`:''}<div style="margin-top:3px"><div class="tx-meta">${dateStr}</div></div></div>`;
+  }).join('')||'<div class="empty">Nothing logged yet</div>';
 }
 
-function renderOverview() {
-  const now = new Date();
-  document.getElementById('ov-month-title').textContent = now.toLocaleString('default', { month: 'long', year: 'numeric' });
-  const { income, spent, cats } = getMonthData();
-  const net = income - spent;
-  const sr = income > 0 ? Math.round((net / income) * 100) : null;
-  document.getElementById('ov-income').textContent = fmt(income);
-  document.getElementById('ov-spent').textContent = fmt(spent);
-  const netEl = document.getElementById('ov-net');
-  netEl.textContent = (net >= 0 ? '+' : '-') + fmt(net);
-  netEl.className = 'metric-value ' + (net >= 0 ? 'green' : 'red');
-  const srEl = document.getElementById('ov-sr');
-  srEl.textContent = sr !== null ? sr + '%' : '—';
-  srEl.className = 'metric-value ' + (sr === null ? '' : sr >= 20 ? 'green' : sr >= 0 ? 'amber' : 'red');
-  const catColors = ['#1db954','#3b82f6','#f59e0b','#e8453c','#8b5cf6','#ec4899','#14b8a6','#f97316'];
-  const sorted = Object.entries(cats).sort((a, b) => b[1] - a[1]);
-  const maxVal = sorted.length > 0 ? sorted[0][1] : 1;
-  let barsHtml = sorted.map(([cat, val], i) => {
-    const pct = Math.round((val / maxVal) * 100);
-    return `<div class="bar-row"><div class="bar-cat">${cat}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${catColors[i % catColors.length]}"></div></div><div class="bar-amt">${fmt(val)}</div></div>`;
-  }).join('');
-  document.getElementById('cat-bars').innerHTML = barsHtml || '<div class="empty">No expenses this month</div>';
-  const recent = transactions.slice(0, 8);
-  let txHtml = recent.map(tx => {
-    const spread = tx.amort ? `<span class="pill spread">/${tx.months}mo</span>` : '';
-    const dispAmt = tx.amort ? tx.amount / tx.months : tx.amount;
-    const sign = tx.type === 'income' ? '+' : '-';
-    const amtClass = tx.type === 'income' ? 'green' : 'red';
-    const d = new Date(tx.date);
-    const dateStr = d.toLocaleDateString('default', { day: 'numeric', month: 'short' });
-    return `<div class="tx-item"><div class="tx-top"><div class="tx-name">${tx.cat}${spread}</div><div class="tx-amount ${amtClass}">${sign}${fmt(dispAmt)}</div></div>${tx.desc ? `<div class="tx-desc">${tx.desc}</div>` : ''}<div class="tx-bottom"><div class="tx-meta">${dateStr}</div></div></div>`;
-  }).join('');
-  document.getElementById('tx-list').innerHTML = txHtml || '<div class="empty">Nothing logged yet</div>';
+// ── Portfolio tab ──────────────────────────────────────────────────
+function toEUR(price,cur){
+  if(cur==='EUR')return price;
+  if(cur==='USD')return price/eurusd;
+  if(cur==='GBP')return price/eurgbp;
+  return price;
 }
 
-function renderWealth() {
-  if (document.getElementById('in-flat').value === '') {
-    document.getElementById('in-flat').value = wealth.flat || '';
-    document.getElementById('in-broker').value = wealth.broker || '';
-    document.getElementById('in-crypto').value = wealth.crypto || '';
-    document.getElementById('in-cash').value = wealth.cash || '';
-  }
-  const total = wealth.flat + wealth.broker + wealth.crypto + wealth.cash;
-  document.getElementById('nw-total').textContent = fmt(total);
-  const assets = [
-    { name: 'Dubai flat', val: wealth.flat, color: '#1db954' },
-    { name: 'IBKR / ETF', val: wealth.broker, color: '#3b82f6' },
-    { name: 'Crypto', val: wealth.crypto, color: '#f59e0b' },
-    { name: 'Cash', val: wealth.cash, color: '#888' }
-  ];
-  const html = assets.filter(a => a.val > 0).map(a => {
-    const pct = total > 0 ? Math.round((a.val / total) * 100) : 0;
-    return `<div class="asset-row"><div class="asset-left"><div class="asset-dot" style="background:${a.color}"></div><div><div class="asset-name">${a.name}</div><div class="asset-pct">${pct}% of total</div></div></div><div class="asset-val">${fmt(a.val)}</div></div>`;
-  }).join('');
-  document.getElementById('asset-list').innerHTML = html || '<div class="empty">Add your assets below</div>';
-  if (wealth.broker > 0) {
-    const monthly = 500;
-    const rate = 0.07;
-    const milestones = [1, 2, 3, 5, 10, 15, 20];
-    const rows = milestones.map(y => {
-      const fv = wealth.broker * Math.pow(1 + rate, y) + monthly * 12 * ((Math.pow(1 + rate, y) - 1) / rate);
-      return `<div class="proj-row"><div class="proj-year">+${y}yr (${new Date().getFullYear() + y})</div><div class="proj-val ${y >= 10 ? 'green' : ''}">${fmt(fv)}</div></div>`;
+function calcStats(){
+  let totalValue=0,totalCost=0,etfValue=0,stockValue=0;
+  const enriched=positions.map(p=>{
+    const cur=p.currency||'USD';
+    const currentEUR=toEUR(p.currentPrice,cur);
+    const costEUR=toEUR(p.costBasis,cur);
+    const valueEUR=currentEUR*p.qty;
+    const pnlEUR=valueEUR-costEUR;
+    const pnlPct=costEUR>0?(pnlEUR/costEUR)*100:0;
+    totalValue+=valueEUR;totalCost+=costEUR;
+    if(p.type==='ETF')etfValue+=valueEUR;else stockValue+=valueEUR;
+    return{...p,currency:cur,currentEUR,valueEUR,costEUR,pnlEUR,pnlPct};
+  });
+  return{enriched,totalValue,totalCost,etfValue,stockValue};
+}
+
+function renderPortfolio(){
+  const{enriched,totalValue,totalCost,etfValue,stockValue}=calcStats();
+  const totalPnl=totalValue-totalCost;
+  const totalPnlPct=totalCost>0?(totalPnl/totalCost)*100:0;
+  const etfPct=totalValue>0?Math.round((etfValue/totalValue)*100):0;
+  const stockPct=100-etfPct;
+
+  document.getElementById('port-current').textContent=fmt(totalValue);
+  document.getElementById('port-cost').textContent=fmt(totalCost);
+  const pnlEl=document.getElementById('port-pnl');
+  pnlEl.textContent=fmtSigned(totalPnl)+' ('+fmtPct(totalPnlPct)+')';
+  pnlEl.className='port-stat-val '+(totalPnl>=0?'green':'red');
+
+  const gainEl=document.getElementById('port-gain');
+  gainEl.textContent=fmtSigned(totalPnl)+' ('+fmtPct(totalPnlPct)+') unrealized';
+  gainEl.className='port-gain-line '+(totalPnl>=0?'green':'red');
+
+  document.getElementById('port-fx').textContent=eurusd.toFixed(4);
+  document.getElementById('port-updated').textContent='Prices as of '+posUpdatedAt;
+  document.getElementById('pos-count').textContent=enriched.length;
+
+  document.getElementById('split-etf-bar').style.width=etfPct+'%';
+  document.getElementById('split-stock-bar').style.width=stockPct+'%';
+  document.getElementById('split-etf-pct').textContent=etfPct+'% · '+fmt(etfValue);
+  document.getElementById('split-stock-pct').textContent=stockPct+'% · '+fmt(stockValue);
+
+  // Apply filter
+  let filtered=[...enriched];
+  if(posFilter==='ETF')filtered=filtered.filter(p=>p.type==='ETF');
+  else if(posFilter==='Stock')filtered=filtered.filter(p=>p.type==='Stock');
+  else if(posFilter==='gain')filtered=filtered.filter(p=>p.pnlEUR>=0);
+  else if(posFilter==='loss')filtered=filtered.filter(p=>p.pnlEUR<0);
+  filtered.sort((a,b)=>b.valueEUR-a.valueEUR);
+
+  if(filtered.length===0){
+    document.getElementById('pos-list').innerHTML='<div class="empty">No positions match this filter</div>';
+  } else {
+    document.getElementById('pos-list').innerHTML=filtered.map(p=>{
+      const c=p.pnlEUR>=0?'green':'red';
+      const curSym=p.currency==='USD'?'$':p.currency==='GBP'?'£':'€';
+      const isEditing=editingPosition===p.symbol;
+      return`<div class="pos-item"><div onclick="toggleEdit('${p.symbol}')">
+        <div class="pos-top">
+          <div><span class="pos-sym">${p.symbol}</span><span class="pill ${p.type==='ETF'?'etf':'stock'}">${p.type}</span></div>
+          <div class="pos-val">${fmt(p.valueEUR)}</div>
+        </div>
+        <div class="pos-bot">
+          <div class="pos-detail">${p.qty} × ${curSym}${p.currentPrice.toFixed(2)} · cost ${fmt(p.costEUR)}</div>
+          <div class="pos-pnl ${c}">${fmtSigned(p.pnlEUR)} (${fmtPct(p.pnlPct)})</div>
+        </div>
+      </div>
+      <div class="pos-edit ${isEditing?'visible':''}">
+        <div class="pos-edit-row">
+          <div><label>Update price (${p.currency})</label><input type="number" id="edit-price-${p.symbol}" step="0.01" placeholder="${p.currentPrice.toFixed(2)}" value="${p.currentPrice}"></div>
+          <button class="pos-edit-btn" onclick="event.stopPropagation();updatePrice('${p.symbol}')">Save</button>
+        </div>
+      </div>
+      </div>`;
     }).join('');
-    document.getElementById('proj-placeholder').style.display = 'none';
-    document.getElementById('proj-rows').innerHTML = rows;
   }
+
+  // Auto-sync to wealth
+  wealth.broker=Math.round(totalValue);
+  localStorage.setItem('fos_wealth',JSON.stringify(wealth));
 }
 
-function updateWealth() {
-  wealth.flat = parseFloat(document.getElementById('in-flat').value) || 0;
-  wealth.broker = parseFloat(document.getElementById('in-broker').value) || 0;
-  wealth.crypto = parseFloat(document.getElementById('in-crypto').value) || 0;
-  wealth.cash = parseFloat(document.getElementById('in-cash').value) || 0;
-  localStorage.setItem('fos_wealth', JSON.stringify(wealth));
-  renderWealth();
-  flash('Snapshot saved');
-}
-
-function syncInput(sliderId, inputId) {
-  const slider = document.getElementById(sliderId);
-  const input = document.getElementById(inputId);
-  input.value = slider.value;
-}
-
-function syncSlider(sliderId, inputId) {
-  const slider = document.getElementById(sliderId);
-  const input = document.getElementById(inputId);
-  const val = parseFloat(input.value);
-  if (!isNaN(val)) {
-    const min = parseFloat(slider.min);
-    const max = parseFloat(slider.max);
-    slider.value = Math.min(Math.max(val, min), max);
-  }
-}
-
-function updateFreedom() {
-  const income = parseFloat(document.getElementById('sl-income-val').value) || 4000;
-  const invest = parseFloat(document.getElementById('sl-invest-val').value) || 500;
-  const age = parseFloat(document.getElementById('sl-age-val').value) || 32;
-  const assets = parseFloat(document.getElementById('sl-assets-val').value) || 0;
-  const rate = (parseFloat(document.getElementById('sl-rate-val').value) || 7) / 100;
-  const target = income * 12 * 25;
-  let portfolio = assets;
-  let years = 0;
-  while (portfolio < target && years < 60) {
-    portfolio = portfolio * (1 + rate) + invest * 12;
-    years++;
-  }
-  const retireYear = new Date().getFullYear() + years;
-  const retireAge = age + years;
-  document.getElementById('ret-year').textContent = years < 60 ? retireYear : '60+';
-  document.getElementById('ret-age-result').textContent = `Age ${retireAge} · in ${years} years`;
-  document.getElementById('ret-target').textContent = `Independence target: ${fmt(target)} (${fmt(income)}/mo × 25)`;
-  const checkpoints = [];
-  for (let y = 5; y <= Math.min(years + 5, 50); y += 5) checkpoints.push(y);
-  if (!checkpoints.includes(years) && years < 50) checkpoints.push(years);
-  checkpoints.sort((a, b) => a - b);
-  let p = assets;
-  let projHtml = '';
-  let prev = 0;
-  checkpoints.forEach(y => {
-    for (let i = prev; i < y; i++) p = p * (1 + rate) + invest * 12;
-    prev = y;
-    const pct = Math.min(100, Math.round((p / target) * 100));
-    const done = pct >= 100;
-    projHtml += `<div class="proj-row"><div class="proj-year">Year ${y} · Age ${age + y} (${new Date().getFullYear() + y})</div><div class="proj-val ${done ? 'green' : ''}">${fmt(p)} · ${pct}%</div></div>`;
+function setFilter(type){
+  posFilter=type;
+  document.querySelectorAll('.filter-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.filter===type);
   });
-  document.getElementById('freedom-proj').innerHTML = projHtml;
+  renderPortfolio();
 }
 
-async function getInsight() {
-  const key = localStorage.getItem('fos_apikey');
-  if (!key) { alert('Add your Anthropic API key in Settings to enable AI insights.'); return; }
-  const { income, spent, cats } = getMonthData();
-  const catStr = Object.entries(cats).map(([k, v]) => `${k}: ${fmt(v)}`).join(', ');
-  const area = document.getElementById('insight-area');
-  area.innerHTML = '<div class="insight-box" style="color:var(--text3);">Analyzing your data...</div>';
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: `You are a direct personal finance advisor. Analyze this monthly data and give exactly 3 insights. One must be an uncomfortable truth. Be sharp, no filler. Format each as: GOOD/WARN/INFO then one sentence max 35 words. Data: Income ${fmt(income)}, Spent ${fmt(spent)}, Net ${fmt(income - spent)}, Savings rate ${income > 0 ? Math.round(((income - spent) / income) * 100) : 0}%, Categories: ${catStr || 'none logged yet'}.` }]
-      })
+function toggleEdit(symbol){
+  editingPosition=editingPosition===symbol?null:symbol;
+  renderPortfolio();
+}
+
+function updatePrice(symbol){
+  const input=document.getElementById('edit-price-'+symbol);
+  const newPrice=parseFloat(input.value);
+  if(isNaN(newPrice)||newPrice<=0){alert('Enter a valid price.');return;}
+  const idx=positions.findIndex(p=>p.symbol===symbol);
+  if(idx>=0){
+    positions[idx].currentPrice=newPrice;
+    posUpdatedAt='manual update '+new Date().toLocaleDateString();
+    localStorage.setItem('fos_positions',JSON.stringify(positions));
+    localStorage.setItem(POS_UPDATED_KEY,posUpdatedAt);
+    editingPosition=null;
+    renderPortfolio();
+    flash(symbol+' updated');
+  }
+}
+
+function importCSV(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const rows=e.target.result.split('\n').map(r=>{
+      // CSV may have quoted commas - simple split sufficient for IBKR format
+      return r.split(',');
     });
-    const data = await res.json();
-    const text = data.content[0].text;
-    const lines = text.split('\n').filter(l => l.trim());
-    let html = lines.map(line => {
-      if (line.includes('GOOD')) return `<div class="insight-box"><div class="insight-tag tag-good">Good</div>${line.replace(/GOOD[:\-]?\s*/i, '')}</div>`;
-      if (line.includes('WARN')) return `<div class="insight-box"><div class="insight-tag tag-warn">Watch</div>${line.replace(/WARN[:\-]?\s*/i, '')}</div>`;
-      if (line.includes('INFO')) return `<div class="insight-box"><div class="insight-tag tag-info">Insight</div>${line.replace(/INFO[:\-]?\s*/i, '')}</div>`;
-      return line.trim() ? `<div class="insight-box">${line}</div>` : '';
+    const ETF_SET=new Set(['VWCE','VUSA','VUSD','VEUR','VOO','VTI','VT','VGT','QQQ','BLOK','BLCN','CHIQ','ASHS','MCHI','KBA','VMID','IPRP','SPYM','SPLG','H4ZN','ICGA','ARKW','AFTY','ASHR','CHIE','CHII','CHIK','CNYA','CXSE']);
+    const newPos=[];
+    rows.forEach(r=>{
+      if(r[0]==='Open Positions'&&r[1]==='Data'&&r[2]==='Summary'&&r[5]){
+        const s=r[5].trim();
+        const qty=parseFloat(r[6]);
+        const cp=parseFloat(r[8]);
+        const cb=parseFloat(r[9]);
+        const closePrice=parseFloat(r[10]);
+        const cur=r[4].trim();
+        if(s&&!isNaN(qty)&&qty>0&&!isNaN(closePrice)){
+          newPos.push({
+            symbol:s,qty,
+            costPrice:cp,
+            costBasis:cb,
+            currentPrice:closePrice,
+            currency:cur,
+            type:ETF_SET.has(s)?'ETF':'Stock'
+          });
+        }
+      }
+    });
+    if(newPos.length>0){
+      positions=newPos;
+      posUpdatedAt='IBKR CSV import '+new Date().toLocaleDateString();
+      localStorage.setItem('fos_positions',JSON.stringify(positions));
+      localStorage.setItem(POS_UPDATED_KEY,posUpdatedAt);
+      flash('Imported '+newPos.length+' positions');
+      renderPortfolio();
+    } else {
+      flash('No positions found - check CSV format');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
+
+// ── Wealth tab ─────────────────────────────────────────────────────
+function renderWealth(){
+  if(!document.getElementById('in-flat').value){
+    document.getElementById('in-flat').value=wealth.flat||'';
+    document.getElementById('in-broker').value=wealth.broker||'';
+    document.getElementById('in-crypto').value=wealth.crypto||'';
+    document.getElementById('in-cash').value=wealth.cash||'';
+  }
+  const total=wealth.flat+wealth.broker+wealth.crypto+wealth.cash;
+  document.getElementById('nw-total').textContent=fmt(total);
+  const assets=[
+    {name:'Dubai flat',val:wealth.flat,color:'#1db954'},
+    {name:'IBKR portfolio',val:wealth.broker,color:'#3b82f6'},
+    {name:'Crypto',val:wealth.crypto,color:'#f59e0b'},
+    {name:'Cash',val:wealth.cash,color:'#888'}
+  ];
+  document.getElementById('asset-list').innerHTML=assets.filter(a=>a.val>0).map(a=>{
+    const pct=total>0?Math.round((a.val/total)*100):0;
+    return`<div class="asset-row"><div class="asset-left"><div class="asset-dot" style="background:${a.color}"></div><div><div class="asset-name">${a.name}</div><div class="asset-pct">${pct}% of total</div></div></div><div class="asset-val">${fmt(a.val)}</div></div>`;
+  }).join('')||'<div class="empty">Add your assets below</div>';
+  if(wealth.broker>0){
+    const rate=0.07,monthly=500;
+    document.getElementById('proj-placeholder').style.display='none';
+    document.getElementById('proj-rows').innerHTML=[1,2,3,5,10,15,20].map(y=>{
+      const fv=wealth.broker*Math.pow(1+rate,y)+monthly*12*((Math.pow(1+rate,y)-1)/rate);
+      return`<div class="proj-row"><div class="proj-year">+${y}yr (${new Date().getFullYear()+y})</div><div class="proj-val ${y>=10?'green':''}">${fmt(fv)}</div></div>`;
     }).join('');
-    area.innerHTML = html;
-  } catch (e) {
-    area.innerHTML = '<div class="insight-box" style="color:var(--red);">Could not connect. Check your API key in Settings.</div>';
+  }
+}
+function updateWealth(){
+  wealth.flat=parseFloat(document.getElementById('in-flat').value)||0;
+  wealth.broker=parseFloat(document.getElementById('in-broker').value)||0;
+  wealth.crypto=parseFloat(document.getElementById('in-crypto').value)||0;
+  wealth.cash=parseFloat(document.getElementById('in-cash').value)||0;
+  localStorage.setItem('fos_wealth',JSON.stringify(wealth));
+  renderWealth();flash('Snapshot saved');
+}
+
+// ── Freedom tab ────────────────────────────────────────────────────
+function syncInput(sliderId,inputId){document.getElementById(inputId).value=document.getElementById(sliderId).value;}
+function syncSlider(sliderId,inputId){
+  const sl=document.getElementById(sliderId),inp=document.getElementById(inputId);
+  const v=parseFloat(inp.value);
+  if(!isNaN(v))sl.value=Math.min(Math.max(v,parseFloat(sl.min)),parseFloat(sl.max));
+}
+function updateFreedom(){
+  const income=parseFloat(document.getElementById('sl-income-val').value)||4000;
+  const invest=parseFloat(document.getElementById('sl-invest-val').value)||500;
+  const age=parseFloat(document.getElementById('sl-age-val').value)||32;
+  const assets=parseFloat(document.getElementById('sl-assets-val').value)||0;
+  const rate=(parseFloat(document.getElementById('sl-rate-val').value)||7)/100;
+  const target=income*12*25;
+  let portfolio=assets,years=0;
+  while(portfolio<target&&years<60){portfolio=portfolio*(1+rate)+invest*12;years++;}
+  const retireYear=new Date().getFullYear()+years,retireAge=age+years;
+  document.getElementById('ret-year').textContent=years<60?retireYear:'60+';
+  document.getElementById('ret-age-result').textContent='Age '+retireAge+' · in '+years+' years';
+  document.getElementById('ret-target').textContent='Target: '+fmt(target)+' ('+fmt(income)+'/mo × 25)';
+  const checks=[5,10,15,20,25,years].filter((v,i,a)=>a.indexOf(v)===i&&v<=55).sort((a,b)=>a-b);
+  let p=assets,prev=0;
+  document.getElementById('freedom-proj').innerHTML=checks.map(y=>{
+    for(let i=prev;i<y;i++)p=p*(1+rate)+invest*12;prev=y;
+    const pct=Math.min(100,Math.round((p/target)*100));
+    return`<div class="proj-row"><div class="proj-year">Year ${y} · Age ${age+y} (${new Date().getFullYear()+y})</div><div class="proj-val ${pct>=100?'green':''}">${fmt(p)} · ${pct}%</div></div>`;
+  }).join('');
+}
+
+// ── Insights ───────────────────────────────────────────────────────
+async function getInsight(){
+  const key=localStorage.getItem('fos_apikey');
+  if(!key){alert('Add API key in More tab.');return;}
+  const{income,spent,cats}=getMonthData();
+  const catStr=Object.entries(cats).map(([k,v])=>k+':'+fmt(v)).join(', ');
+  const area=document.getElementById('insight-area');
+  area.innerHTML='<div class="insight-box" style="color:var(--text3);">Analyzing...</div>';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:'Direct personal finance advisor. 3 insights, one uncomfortable truth. Format: GOOD/WARN/INFO tag + max 35 words. Income '+fmt(income)+', Spent '+fmt(spent)+', Net '+fmt(income-spent)+', Savings rate '+(income>0?Math.round(((income-spent)/income)*100):0)+'%, Categories: '+(catStr||'none')+'.'}]})
+    });
+    const data=await res.json();
+    area.innerHTML=data.content[0].text.split('\n').filter(l=>l.trim()).map(line=>{
+      if(line.includes('GOOD'))return'<div class="insight-box"><div class="insight-tag tag-good">Good</div>'+line.replace(/GOOD[:\-]?\s*/i,'')+'</div>';
+      if(line.includes('WARN'))return'<div class="insight-box"><div class="insight-tag tag-warn">Watch</div>'+line.replace(/WARN[:\-]?\s*/i,'')+'</div>';
+      if(line.includes('INFO'))return'<div class="insight-box"><div class="insight-tag tag-info">Insight</div>'+line.replace(/INFO[:\-]?\s*/i,'')+'</div>';
+      return line.trim()?'<div class="insight-box">'+line+'</div>':'';
+    }).join('');
+  }catch(e){area.innerHTML='<div class="insight-box" style="color:var(--red);">Failed. Check API key.</div>';}
+}
+
+// ── Settings ───────────────────────────────────────────────────────
+function saveApiKey(){localStorage.setItem('fos_apikey',document.getElementById('api-key-input').value.trim());flash('API key saved');}
+function saveCurrency(){currency=document.getElementById('currency-select').value;localStorage.setItem('fos_currency',currency);}
+function saveFX(){
+  const u=parseFloat(document.getElementById('fx-usd-input').value);
+  const g=parseFloat(document.getElementById('fx-gbp-input').value);
+  if(!isNaN(u)&&u>0){eurusd=u;localStorage.setItem('fos_eurusd',u);}
+  if(!isNaN(g)&&g>0){eurgbp=g;localStorage.setItem('fos_eurgbp',g);}
+  flash('Rates saved');
+}
+function exportData(){
+  const blob=new Blob([JSON.stringify({transactions,wealth,positions,exportDate:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='finance-os-export.json';a.click();
+}
+function clearData(){if(confirm('Delete all data?')){localStorage.clear();location.reload();}}
+function resetPositions(){
+  if(confirm('Reset portfolio to IBKR May 8 snapshot? Your manual price updates will be lost.')){
+    positions=JSON.parse(JSON.stringify(SEED));
+    posUpdatedAt='May 8, 2026 (IBKR statement)';
+    localStorage.setItem('fos_positions',JSON.stringify(positions));
+    localStorage.setItem(POS_UPDATED_KEY,posUpdatedAt);
+    flash('Portfolio reset');
+    renderPortfolio();
   }
 }
 
-function saveApiKey() {
-  const key = document.getElementById('api-key-input').value.trim();
-  localStorage.setItem('fos_apikey', key);
-  flash('API key saved');
-}
-
-function saveCurrency() {
-  currency = document.getElementById('currency-select').value;
-  localStorage.setItem('fos_currency', currency);
-}
-
-function exportData() {
-  const data = { transactions, wealth, exportDate: new Date().toISOString() };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'finance-os-export.json'; a.click();
-}
-
-function clearData() {
-  if (confirm('Delete all data? This cannot be undone.')) {
-    localStorage.clear();
-    transactions = [];
-    wealth = { flat: 0, broker: 0, crypto: 0, cash: 0 };
-    flash('Data cleared');
-  }
-}
-
-function showScreen(id, btn) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('screen-' + id).classList.add('active');
+// ── Navigation ─────────────────────────────────────────────────────
+function showScreen(id,btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
   btn.classList.add('active');
-  if (id === 'overview') renderOverview();
-  if (id === 'wealth') renderWealth();
-  if (id === 'freedom') updateFreedom();
+  if(id==='overview')renderOverview();
+  if(id==='wealth')renderWealth();
+  if(id==='freedom')updateFreedom();
+  if(id==='portfolio')renderPortfolio();
 }
 
 updateFreedom();
