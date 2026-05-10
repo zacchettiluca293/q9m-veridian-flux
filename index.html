@@ -856,32 +856,65 @@ function addPositionManual(){
 }
 
 // ── Wealth + Cash + Flat ───────────────────────────────────────────
+// Cash inputs are built only when accounts are added/removed.
+// On every keystroke we only update the data + total - never the input itself.
 function renderCashAccounts(){
   const list=document.getElementById('cash-list');
   list.innerHTML=cashAccounts.map((c,i)=>`
     <div class="cash-row">
-      <input type="text" value="${c.bank}" oninput="updateCashAccount(${i},'bank',this.value)">
-      <select onchange="updateCashAccount(${i},'currency',this.value)">
+      <input type="text" value="${c.bank||''}" onchange="updateCashField(${i},'bank',this.value)">
+      <select onchange="updateCashField(${i},'currency',this.value);recomputeCashTotal();">
         <option ${c.currency==='EUR'?'selected':''}>EUR</option>
         <option ${c.currency==='AED'?'selected':''}>AED</option>
         <option ${c.currency==='USD'?'selected':''}>USD</option>
         <option ${c.currency==='GBP'?'selected':''}>GBP</option>
       </select>
-      <input type="number" inputmode="decimal" placeholder="0" value="${c.amount||''}" oninput="updateCashAccount(${i},'amount',parseFloat(this.value)||0)">
+      <input type="number" inputmode="decimal" placeholder="0" value="${c.amount||''}" oninput="updateCashAmountLive(${i},this.value)" onblur="recomputeCashTotal();updateNetWorthOnly();">
     </div>
   `).join('')||'<div class="empty">No accounts. Click below to add.</div>';
-  let totalEUR=0;
-  cashAccounts.forEach(c=>{totalEUR+=toEUR(c.amount||0,c.currency);});
-  document.getElementById('cash-total-eur').textContent=fmt(totalEUR);
+  recomputeCashTotal();
 }
 
-function updateCashAccount(idx,field,val){
+function updateCashField(idx,field,val){
   cashAccounts[idx][field]=val;
   localStorage.setItem('fos_cash',JSON.stringify(cashAccounts));
+}
+
+function updateCashAmountLive(idx,val){
+  // Only update the underlying data and total - DO NOT rebuild any input.
+  cashAccounts[idx].amount=parseFloat(val)||0;
+  localStorage.setItem('fos_cash',JSON.stringify(cashAccounts));
+  recomputeCashTotal();
+}
+
+function recomputeCashTotal(){
   let totalEUR=0;
   cashAccounts.forEach(c=>{totalEUR+=toEUR(c.amount||0,c.currency);});
-  document.getElementById('cash-total-eur').textContent=fmt(totalEUR);
-  renderWealth();
+  const el=document.getElementById('cash-total-eur');
+  if(el)el.textContent=fmt(totalEUR);
+}
+
+function updateNetWorthOnly(){
+  // Recomputes the net worth header + asset list, never touches inputs.
+  let cashTotalEUR=0;
+  cashAccounts.forEach(c=>{cashTotalEUR+=toEUR(c.amount||0,c.currency);});
+  cashTotalEUR=Math.round(cashTotalEUR);
+  const{yourShare}=calcFlatValue();
+  const flatEUR=Math.round(yourShare);
+  const total=flatEUR+wealth.broker+wealth.crypto+cashTotalEUR;
+  const nwEl=document.getElementById('nw-total');
+  if(nwEl)nwEl.textContent=fmt(total);
+  const assets=[
+    {name:'Dubai flat (your share)',val:flatEUR,color:'#1db954'},
+    {name:'IBKR portfolio',val:wealth.broker,color:'#3b82f6'},
+    {name:'Crypto',val:wealth.crypto,color:'#f59e0b'},
+    {name:'Bank cash',val:cashTotalEUR,color:'#888'}
+  ];
+  const al=document.getElementById('asset-list');
+  if(al)al.innerHTML=assets.filter(a=>a.val>0).map(a=>{
+    const pct=total>0?Math.round((a.val/total)*100):0;
+    return`<div class="asset-row"><div class="asset-left"><div class="asset-dot" style="background:${a.color}"></div><div><div class="asset-name">${a.name}</div><div class="asset-pct">${pct}% of total</div></div></div><div class="asset-val">${fmt(a.val)}</div></div>`;
+  }).join('')||'<div class="empty">Add your assets below</div>';
 }
 
 function addCashAccount(){
@@ -960,8 +993,26 @@ function renderWealth(){
       return`<div class="proj-row"><div class="proj-year">+${y}yr (${new Date().getFullYear()+y})</div><div class="proj-val ${y>=10?'green':''}">${fmt(fv)}</div></div>`;
     }).join('');
   }
-  renderCashAccounts();
-  renderFlat();
+  // Only rebuild cash list if it's empty (first render or after add/remove)
+  // Otherwise leave existing inputs intact so the keyboard does not drop on every keystroke.
+  const cashList=document.getElementById('cash-list');
+  if(!cashList.querySelector('.cash-row'))renderCashAccounts();
+  else recomputeCashTotal();
+  // Flat fields - only populate if empty (don't re-render while user types)
+  const fp=document.getElementById('flat-purchase');
+  if(fp&&!fp.value)renderFlat();
+  else if(flat.purchaseAED>0)renderFlatSummaryOnly();
+}
+
+function renderFlatSummaryOnly(){
+  const{aedValue,eurValue,yourShare,yearsOwned}=calcFlatValue();
+  if(flat.purchaseAED>0){
+    document.getElementById('flat-summary').style.display='block';
+    document.getElementById('flat-years-owned').textContent=yearsOwned+' year'+(yearsOwned===1?'':'s');
+    document.getElementById('flat-aed-value').textContent='د.إ '+Math.round(aedValue).toLocaleString();
+    document.getElementById('flat-eur-value').textContent=fmt(eurValue);
+    document.getElementById('flat-your-share').textContent=fmt(yourShare);
+  }
 }
 
 function updateWealth(){
