@@ -218,6 +218,7 @@
 <!-- PORTFOLIO TAB -->
 <div id="screen-portfolio" class="screen">
   <div class="screen-header"><div class="screen-title">Portfolio</div><div class="screen-sub" id="port-updated">—</div></div>
+  <div id="port-stale-banner" style="display:none;padding:10px 12px;background:rgba(245,158,11,0.1);border:0.5px solid rgba(245,158,11,0.3);border-radius:var(--radius-sm);font-size:12px;color:var(--amber);margin-bottom:12px;line-height:1.5;"></div>
   <div class="card">
     <div class="port-headline">
       <div class="port-current-label">Current value</div>
@@ -310,11 +311,11 @@
   <div class="card">
     <div class="card-title">Dubai flat</div>
     <div class="row">
-      <div><label>Purchase price (AED)</label><input id="flat-purchase" type="number" inputmode="decimal" placeholder="e.g. 1500000"></div>
-      <div><label>Purchase year</label><input id="flat-year" type="number" inputmode="numeric" placeholder="e.g. 2023" min="2000" max="2030"></div>
+      <div><label>Purchase price (AED)</label><input id="flat-purchase" type="number" inputmode="decimal" placeholder="e.g. 1440000"></div>
+      <div><label>Handover date</label><input id="flat-date" type="date"></div>
     </div>
     <div class="row">
-      <div><label>Annual appreciation %</label><input id="flat-appreciation" type="number" inputmode="decimal" placeholder="2" step="0.5"></div>
+      <div><label>Annual appreciation %</label><input id="flat-appreciation" type="number" inputmode="decimal" placeholder="4" step="0.5"></div>
       <div><label>Your ownership %</label><input id="flat-ownership" type="number" inputmode="decimal" placeholder="50" step="1" min="0" max="100"></div>
     </div>
     <button class="btn btn-secondary" onclick="updateFlat()">Save flat details</button>
@@ -330,12 +331,30 @@
     <div class="card-title">Other assets</div>
     <div class="row">
       <div><label>IBKR portfolio (€)</label><input id="in-broker" type="number" inputmode="decimal" placeholder="Auto from Portfolio"></div>
-      <div><label>Crypto (€)</label><input id="in-crypto" type="number" inputmode="decimal" placeholder="e.g. 7500"></div>
+      <div></div>
     </div>
     <button class="btn btn-primary" onclick="updateWealth()">Save snapshot</button>
   </div>
   <div class="card">
-    <div class="card-title">IBKR projection (7% annualized + €500/mo)</div>
+    <div class="card-title">Crypto (live prices)</div>
+    <div id="crypto-summary" style="margin-bottom:14px;">
+      <div class="port-current-label">Total crypto value</div>
+      <div class="port-current-val" id="crypto-total">—</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:6px;" id="crypto-updated">Loading prices...</div>
+    </div>
+    <div class="divider"></div>
+    <div id="crypto-exchanges"></div>
+    <button class="btn-sm" onclick="refreshCryptoPrices()" style="width:100%;padding:10px;margin-top:8px;">Refresh prices</button>
+    <button class="btn-sm" onclick="toggleManualCrypto()" style="width:100%;padding:10px;margin-top:6px;">Enter prices manually (fallback)</button>
+    <div id="manual-crypto" style="display:none;margin-top:12px;padding:12px;background:var(--bg3);border-radius:var(--radius-sm);">
+      <p style="font-size:11px;color:var(--text2);margin-bottom:10px;">Enter current USD price per coin. EUR is auto-computed from FX rate.</p>
+      <div id="manual-crypto-inputs"></div>
+      <button class="btn-sm" onclick="saveManualPrices()" style="width:100%;padding:10px;margin-top:8px;background:var(--green);color:#000;border-color:var(--green);">Save manual prices</button>
+    </div>
+    <p class="api-note" style="margin-top:8px;">Tries CryptoCompare → Binance → CoinGecko · auto-refreshes daily</p>
+  </div>
+  <div class="card">
+    <div class="card-title">IBKR projection (7% annualized + €1,000/mo)</div>
     <div class="empty" id="proj-placeholder">Add IBKR value to see projections</div>
     <div id="proj-rows"></div>
   </div>
@@ -347,16 +366,16 @@
   <div class="card"><div class="retire-hero"><div class="retire-year" id="ret-year">—</div><div class="retire-age" id="ret-age-result"></div><div class="retire-target" id="ret-target"></div></div></div>
   <div class="card">
     <div class="slider-block">
-      <div class="slider-header"><span class="slider-label">Monthly income in retirement (€)</span><input class="slider-input" id="sl-income-val" type="number" inputmode="decimal" value="4000" oninput="syncSlider('sl-income','sl-income-val');updateFreedom()"></div>
-      <input type="range" min="1000" max="50000" step="500" value="4000" id="sl-income" oninput="syncInput('sl-income','sl-income-val');updateFreedom()">
+      <div class="slider-header"><span class="slider-label">Monthly income in retirement (€)</span><input class="slider-input" id="sl-income-val" type="number" inputmode="decimal" value="5000" oninput="syncSlider('sl-income','sl-income-val');updateFreedom()"></div>
+      <input type="range" min="1000" max="50000" step="500" value="5000" id="sl-income" oninput="syncInput('sl-income','sl-income-val');updateFreedom()">
     </div>
     <div class="slider-block">
-      <div class="slider-header"><span class="slider-label">Monthly investment (€)</span><input class="slider-input" id="sl-invest-val" type="number" inputmode="decimal" value="500" oninput="syncSlider('sl-invest','sl-invest-val');updateFreedom()"></div>
-      <input type="range" min="100" max="20000" step="50" value="500" id="sl-invest" oninput="syncInput('sl-invest','sl-invest-val');updateFreedom()">
+      <div class="slider-header"><span class="slider-label">Monthly investment (€)</span><input class="slider-input" id="sl-invest-val" type="number" inputmode="decimal" value="1000" oninput="syncSlider('sl-invest','sl-invest-val');updateFreedom()"></div>
+      <input type="range" min="100" max="20000" step="50" value="1000" id="sl-invest" oninput="syncInput('sl-invest','sl-invest-val');updateFreedom()">
     </div>
     <div class="slider-block">
-      <div class="slider-header"><span class="slider-label">Your age today</span><input class="slider-input" id="sl-age-val" type="number" inputmode="numeric" value="32" oninput="syncSlider('sl-age','sl-age-val');updateFreedom()"></div>
-      <input type="range" min="20" max="65" step="1" value="32" id="sl-age" oninput="syncInput('sl-age','sl-age-val');updateFreedom()">
+      <div class="slider-header"><span class="slider-label">Your age today</span><input class="slider-input" id="sl-age-val" type="number" inputmode="numeric" value="33" oninput="syncSlider('sl-age','sl-age-val');updateFreedom()"></div>
+      <input type="range" min="20" max="65" step="1" value="33" id="sl-age" oninput="syncInput('sl-age','sl-age-val');updateFreedom()">
     </div>
     <div class="slider-block">
       <div class="slider-header"><span class="slider-label">Current investable assets (€)</span><input class="slider-input" id="sl-assets-val" type="number" inputmode="decimal" value="129000" oninput="syncSlider('sl-assets','sl-assets-val');updateFreedom()"></div>
@@ -395,8 +414,9 @@
   <div class="card">
     <div class="card-title">Data</div>
     <button class="btn btn-secondary" style="margin-bottom:10px;" onclick="exportData()">Export all data (JSON)</button>
-    <button class="btn btn-secondary" style="color:var(--red);margin-bottom:10px;" onclick="clearData()">Clear all data</button>
-    <button class="btn btn-secondary" onclick="resetPositions()">Reset portfolio to IBKR May 8 snapshot</button>
+    <button class="btn btn-secondary" style="margin-bottom:10px;" onclick="resetTransactionsOnly()">Reload transactions from seed (keeps bank/flat/crypto)</button>
+    <button class="btn btn-secondary" style="margin-bottom:10px;" onclick="resetPositions()">Reset portfolio to IBKR May 8 snapshot</button>
+    <button class="btn btn-secondary" style="color:var(--red);" onclick="clearData()">Clear ALL data (destructive)</button>
   </div>
 </div>
 
@@ -484,13 +504,51 @@ const SEED_TX=[
 ];
 
 let transactions=JSON.parse(localStorage.getItem('fos_tx')||'null')||SEED_TX;
-let wealth=JSON.parse(localStorage.getItem('fos_wealth')||'{"broker":0,"crypto":0}');
-let flat=JSON.parse(localStorage.getItem('fos_flat')||'null')||{purchaseAED:1440000,purchaseYear:2026,appreciation:4,ownership:50};
+let wealth=JSON.parse(localStorage.getItem('fos_wealth')||'{"broker":0,"cryptoLive":0}');
+let flat=JSON.parse(localStorage.getItem('fos_flat')||'null')||{purchaseAED:1440000,handoverDate:'2026-03-24',appreciation:4,ownership:50};
+// Migrate old state that used purchaseYear -> handoverDate
+if(flat.purchaseYear&&!flat.handoverDate){
+  flat.handoverDate=flat.purchaseYear+'-03-24';
+  delete flat.purchaseYear;
+  localStorage.setItem('fos_flat',JSON.stringify(flat));
+}
 let cashAccounts=JSON.parse(localStorage.getItem('fos_cash')||'null')||[
   {bank:'Revolut',currency:'EUR',amount:0},
   {bank:'Revolut',currency:'AED',amount:0},
   {bank:'Deutsche Bank',currency:'EUR',amount:0}
 ];
+
+// Crypto holdings seeded from screenshots (May 10 2026)
+// Each exchange holds (symbol, quantity) pairs. Live prices fetched from CoinGecko.
+const SEED_CRYPTO={
+  Binance:[
+    {symbol:'BNB',qty:1.56415766},
+    {symbol:'BTC',qty:0.00202661},
+    {symbol:'ETH',qty:0.06918263}
+  ],
+  ByBit:[
+    {symbol:'BTC',qty:0.03866444},
+    {symbol:'MNT',qty:237.5},
+    {symbol:'SOL',qty:0.46292666},
+    {symbol:'NEAR',qty:15.029245},
+    {symbol:'ATOM',qty:8.341547},
+    {symbol:'XTZ',qty:32.36647},
+    {symbol:'ETH',qty:0.00461599}
+  ],
+  MetaMask:[
+    {symbol:'stETH',qty:1.10128},
+    {symbol:'ETH',qty:0.85463},
+    {symbol:'mUSD',qty:1.00}
+  ],
+  Phantom:[
+    {symbol:'SOL',qty:5.34141},
+    {symbol:'PSOL',qty:5.22839}
+  ]
+};
+let cryptoHoldings=JSON.parse(localStorage.getItem('fos_crypto')||'null')||SEED_CRYPTO;
+// Live prices cache, keyed by symbol -> {usd, eur, change24h}
+let cryptoPrices=JSON.parse(localStorage.getItem('fos_crypto_prices')||'{}');
+let cryptoFetchedAt=localStorage.getItem('fos_crypto_at')||null;
 let currency=localStorage.getItem('fos_currency')||'EUR';
 let posFilter='all';
 let editingPosition=null;
@@ -544,6 +602,7 @@ const SEED=[
 const POS_UPDATED_KEY='fos_pos_updated';
 let positions=JSON.parse(localStorage.getItem('fos_positions')||'null')||SEED;
 let posUpdatedAt=localStorage.getItem(POS_UPDATED_KEY)||'May 8, 2026 (IBKR statement)';
+let posUpdatedTimestamp=parseInt(localStorage.getItem('fos_pos_ts')||'0')||new Date('2026-05-08').getTime();
 
 // Save seed transactions on first load
 if(!localStorage.getItem('fos_tx'))localStorage.setItem('fos_tx',JSON.stringify(transactions));
@@ -746,7 +805,34 @@ function renderPortfolio(){
   gainEl.textContent=fmtSigned(totalPnl)+' ('+fmtPct(totalPnlPct)+') unrealized';
   gainEl.className='port-gain-line '+(totalPnl>=0?'green':'red');
   document.getElementById('port-fx').textContent=eurusd.toFixed(4);
-  document.getElementById('port-updated').textContent='Prices as of '+posUpdatedAt;
+  const ageDays=Math.floor((Date.now()-posUpdatedTimestamp)/86400000);
+  const ageLabel=ageDays===0?'today':ageDays===1?'1 day ago':ageDays+' days ago';
+  document.getElementById('port-updated').textContent='Last update: '+posUpdatedAt+' ('+ageLabel+')';
+  // Stale price warning - graduated by age
+  const banner=document.getElementById('port-stale-banner');
+  if(banner){
+    if(ageDays>=14){
+      banner.style.display='block';
+      banner.style.background='rgba(232,69,60,0.1)';
+      banner.style.borderColor='rgba(232,69,60,0.3)';
+      banner.style.color='var(--red)';
+      banner.innerHTML='<strong>Prices are '+ageDays+' days old.</strong> These figures may be significantly out of date if the market has moved. Upload a fresh IBKR Activity Statement in the Trades tab to refresh all positions.';
+    } else if(ageDays>=7){
+      banner.style.display='block';
+      banner.style.background='rgba(245,158,11,0.1)';
+      banner.style.borderColor='rgba(245,158,11,0.3)';
+      banner.style.color='var(--amber)';
+      banner.innerHTML='<strong>Prices are '+ageDays+' days old.</strong> Consider uploading a fresh IBKR Activity Statement (Trades tab) to refresh.';
+    } else if(ageDays>=2){
+      banner.style.display='block';
+      banner.style.background='rgba(59,130,246,0.08)';
+      banner.style.borderColor='rgba(59,130,246,0.2)';
+      banner.style.color='var(--blue)';
+      banner.innerHTML='Prices are <strong>'+ageDays+' days old</strong>. Tap any position to update its price manually, or upload a fresh IBKR CSV in the Trades tab.';
+    } else {
+      banner.style.display='none';
+    }
+  }
   document.getElementById('pos-count').textContent=enriched.length;
   document.getElementById('split-etf-bar').style.width=etfPct+'%';
   document.getElementById('split-stock-bar').style.width=stockPct+'%';
@@ -797,8 +883,10 @@ function updatePrice(symbol){
   if(idx>=0){
     positions[idx].currentPrice=newPrice;
     posUpdatedAt='manual update '+new Date().toLocaleDateString();
+    posUpdatedTimestamp=Date.now();
     localStorage.setItem('fos_positions',JSON.stringify(positions));
     localStorage.setItem(POS_UPDATED_KEY,posUpdatedAt);
+    localStorage.setItem('fos_pos_ts',posUpdatedTimestamp);
     editingPosition=null;
     renderPortfolio();
     flash(symbol+' updated');
@@ -828,8 +916,10 @@ function importCSV(event){
     if(newPos.length>0){
       positions=newPos;
       posUpdatedAt='IBKR CSV import '+new Date().toLocaleDateString();
+      posUpdatedTimestamp=Date.now();
       localStorage.setItem('fos_positions',JSON.stringify(positions));
       localStorage.setItem(POS_UPDATED_KEY,posUpdatedAt);
+      localStorage.setItem('fos_pos_ts',posUpdatedTimestamp);
       flash('Imported '+newPos.length+' positions');
       const tlast=document.getElementById('trades-last');
       if(tlast)tlast.textContent=newPos.length+' positions imported on '+new Date().toLocaleString();
@@ -908,13 +998,14 @@ function updateNetWorthOnly(){
   cashTotalEUR=Math.round(cashTotalEUR);
   const{yourShare}=calcFlatValue();
   const flatEUR=Math.round(yourShare);
-  const total=flatEUR+wealth.broker+wealth.crypto+cashTotalEUR;
+  const cryptoEUR=Math.round(wealth.cryptoLive||0);
+  const total=flatEUR+wealth.broker+cryptoEUR+cashTotalEUR;
   const nwEl=document.getElementById('nw-total');
   if(nwEl)nwEl.textContent=fmt(total);
   const assets=[
     {name:'Dubai flat (your share)',val:flatEUR,color:'#1db954'},
     {name:'IBKR portfolio',val:wealth.broker,color:'#3b82f6'},
-    {name:'Crypto',val:wealth.crypto,color:'#f59e0b'},
+    {name:'Crypto (live)',val:cryptoEUR,color:'#f59e0b'},
     {name:'Bank cash',val:cashTotalEUR,color:'#888'}
   ];
   const al=document.getElementById('asset-list');
@@ -932,8 +1023,9 @@ function addCashAccount(){
 
 function calcFlatValue(){
   if(!flat.purchaseAED||flat.purchaseAED<=0)return{aedValue:0,eurValue:0,yourShare:0,yearsOwned:0};
-  const today=new Date(),curYear=today.getFullYear();
-  const yearsOwned=Math.max(0,curYear-flat.purchaseYear);
+  const handoverDate=flat.handoverDate?new Date(flat.handoverDate):new Date('2026-03-24');
+  const today=new Date();
+  const yearsOwned=Math.max(0,(today-handoverDate)/(365.25*86400000));
   const aedValue=flat.purchaseAED*Math.pow(1+(flat.appreciation||0)/100,yearsOwned);
   const eurValue=aedValue/euraed;
   const yourShare=eurValue*((flat.ownership||100)/100);
@@ -942,13 +1034,14 @@ function calcFlatValue(){
 
 function renderFlat(){
   document.getElementById('flat-purchase').value=flat.purchaseAED||'';
-  document.getElementById('flat-year').value=flat.purchaseYear||2024;
-  document.getElementById('flat-appreciation').value=flat.appreciation!=null?flat.appreciation:2;
+  document.getElementById('flat-date').value=flat.handoverDate||'2026-03-24';
+  document.getElementById('flat-appreciation').value=flat.appreciation!=null?flat.appreciation:4;
   document.getElementById('flat-ownership').value=flat.ownership!=null?flat.ownership:50;
   const{aedValue,eurValue,yourShare,yearsOwned}=calcFlatValue();
   if(flat.purchaseAED>0){
     document.getElementById('flat-summary').style.display='block';
-    document.getElementById('flat-years-owned').textContent=yearsOwned+' year'+(yearsOwned===1?'':'s');
+    const yearsStr=yearsOwned<1?Math.round(yearsOwned*12)+' months':yearsOwned.toFixed(1)+' years';
+    document.getElementById('flat-years-owned').textContent=yearsStr;
     document.getElementById('flat-aed-value').textContent='د.إ '+Math.round(aedValue).toLocaleString();
     document.getElementById('flat-eur-value').textContent=fmt(eurValue);
     document.getElementById('flat-your-share').textContent=fmt(yourShare);
@@ -959,9 +1052,9 @@ function renderFlat(){
 
 function updateFlat(){
   flat.purchaseAED=parseFloat(document.getElementById('flat-purchase').value)||0;
-  flat.purchaseYear=parseInt(document.getElementById('flat-year').value)||2024;
+  flat.handoverDate=document.getElementById('flat-date').value||'2026-03-24';
   flat.appreciation=parseFloat(document.getElementById('flat-appreciation').value);
-  if(isNaN(flat.appreciation))flat.appreciation=2;
+  if(isNaN(flat.appreciation))flat.appreciation=4;
   flat.ownership=parseFloat(document.getElementById('flat-ownership').value);
   if(isNaN(flat.ownership))flat.ownership=50;
   localStorage.setItem('fos_flat',JSON.stringify(flat));
@@ -973,19 +1066,19 @@ function updateFlat(){
 function renderWealth(){
   if(!document.getElementById('in-broker').value){
     document.getElementById('in-broker').value=wealth.broker||'';
-    document.getElementById('in-crypto').value=wealth.crypto||'';
   }
   let cashTotalEUR=0;
   cashAccounts.forEach(c=>{cashTotalEUR+=toEUR(c.amount||0,c.currency);});
   cashTotalEUR=Math.round(cashTotalEUR);
   const{yourShare}=calcFlatValue();
   const flatEUR=Math.round(yourShare);
-  const total=flatEUR+wealth.broker+wealth.crypto+cashTotalEUR;
+  const cryptoEUR=Math.round(wealth.cryptoLive||0);
+  const total=flatEUR+wealth.broker+cryptoEUR+cashTotalEUR;
   document.getElementById('nw-total').textContent=fmt(total);
   const assets=[
     {name:'Dubai flat (your share)',val:flatEUR,color:'#1db954'},
     {name:'IBKR portfolio',val:wealth.broker,color:'#3b82f6'},
-    {name:'Crypto',val:wealth.crypto,color:'#f59e0b'},
+    {name:'Crypto (live)',val:cryptoEUR,color:'#f59e0b'},
     {name:'Bank cash',val:cashTotalEUR,color:'#888'}
   ];
   document.getElementById('asset-list').innerHTML=assets.filter(a=>a.val>0).map(a=>{
@@ -993,7 +1086,7 @@ function renderWealth(){
     return`<div class="asset-row"><div class="asset-left"><div class="asset-dot" style="background:${a.color}"></div><div><div class="asset-name">${a.name}</div><div class="asset-pct">${pct}% of total</div></div></div><div class="asset-val">${fmt(a.val)}</div></div>`;
   }).join('')||'<div class="empty">Add your assets below</div>';
   if(wealth.broker>0){
-    const rate=0.07,monthly=500;
+    const rate=0.07,monthly=1000;
     document.getElementById('proj-placeholder').style.display='none';
     document.getElementById('proj-rows').innerHTML=[1,2,3,5,10,15,20].map(y=>{
       const fv=wealth.broker*Math.pow(1+rate,y)+monthly*12*((Math.pow(1+rate,y)-1)/rate);
@@ -1001,21 +1094,26 @@ function renderWealth(){
     }).join('');
   }
   // Only rebuild cash list if it's empty (first render or after add/remove)
-  // Otherwise leave existing inputs intact so the keyboard does not drop on every keystroke.
   const cashList=document.getElementById('cash-list');
   if(!cashList.querySelector('.cash-row'))renderCashAccounts();
   else recomputeCashTotal();
-  // Flat fields - only populate if empty (don't re-render while user types)
+  // Flat fields - only populate if empty
   const fp=document.getElementById('flat-purchase');
   if(fp&&!fp.value)renderFlat();
   else if(flat.purchaseAED>0)renderFlatSummaryOnly();
+  // Crypto: render exchanges, fetch prices if stale
+  renderCryptoExchanges();
+  const stale=!cryptoFetchedAt||(Date.now()-new Date(cryptoFetchedAt).getTime())>86400000;
+  if(stale)refreshCryptoPrices();
+  else updateCryptoDisplay();
 }
 
 function renderFlatSummaryOnly(){
   const{aedValue,eurValue,yourShare,yearsOwned}=calcFlatValue();
   if(flat.purchaseAED>0){
     document.getElementById('flat-summary').style.display='block';
-    document.getElementById('flat-years-owned').textContent=yearsOwned+' year'+(yearsOwned===1?'':'s');
+    const yearsStr=yearsOwned<1?Math.round(yearsOwned*12)+' months':yearsOwned.toFixed(1)+' years';
+    document.getElementById('flat-years-owned').textContent=yearsStr;
     document.getElementById('flat-aed-value').textContent='د.إ '+Math.round(aedValue).toLocaleString();
     document.getElementById('flat-eur-value').textContent=fmt(eurValue);
     document.getElementById('flat-your-share').textContent=fmt(yourShare);
@@ -1024,10 +1122,239 @@ function renderFlatSummaryOnly(){
 
 function updateWealth(){
   wealth.broker=parseFloat(document.getElementById('in-broker').value)||0;
-  wealth.crypto=parseFloat(document.getElementById('in-crypto').value)||0;
   localStorage.setItem('fos_wealth',JSON.stringify(wealth));
   renderWealth();flash('Snapshot saved');
 }
+
+// ── Crypto ─────────────────────────────────────────────────────────
+// Tries multiple free APIs in sequence. Shows the actual error so user can see what's happening.
+// Falls back gracefully and remembers cached prices.
+
+const CRYPTO_SYMBOLS_NEEDED=['BTC','ETH','SOL','BNB','MNT','NEAR','ATOM','XTZ'];
+// Proxy symbols use a base coin's price
+const PROXY_MAP={stETH:'ETH',PSOL:'SOL'};
+
+async function tryFetch(url,timeoutMs){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),timeoutMs||8000);
+  try{
+    const res=await fetch(url,{signal:controller.signal});
+    clearTimeout(timer);
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// API 1: CryptoCompare (best for browser CORS)
+async function fetchCryptoCompare(){
+  const url='https://min-api.cryptocompare.com/data/pricemultifull?fsyms='+CRYPTO_SYMBOLS_NEEDED.join(',')+'&tsyms=USD,EUR';
+  const data=await tryFetch(url);
+  if(!data||!data.RAW)throw new Error('CryptoCompare: empty response');
+  const out={};
+  Object.entries(data.RAW).forEach(([sym,curs])=>{
+    if(curs.USD&&curs.EUR){
+      out[sym]={
+        usd:curs.USD.PRICE,
+        eur:curs.EUR.PRICE,
+        change24h:curs.EUR.CHANGEPCT24HOUR||curs.USD.CHANGEPCT24HOUR||0
+      };
+    }
+  });
+  if(Object.keys(out).length===0)throw new Error('CryptoCompare: no usable data');
+  return out;
+}
+
+// API 2: Binance public (data-api endpoint built for client use)
+async function fetchBinance(){
+  const pairs={BTC:'BTCUSDT',ETH:'ETHUSDT',SOL:'SOLUSDT',BNB:'BNBUSDT',MNT:'MNTUSDT',NEAR:'NEARUSDT',ATOM:'ATOMUSDT',XTZ:'XTZUSDT'};
+  const symbolsArr='['+Object.values(pairs).map(s=>'"'+s+'"').join(',')+']';
+  const priceUrl='https://data-api.binance.vision/api/v3/ticker/24hr?symbols='+encodeURIComponent(symbolsArr);
+  const data=await tryFetch(priceUrl);
+  const pairToBase={};
+  Object.entries(pairs).forEach(([sym,pair])=>{pairToBase[pair]=sym;});
+  const usdToEur=1/eurusd;
+  const out={};
+  data.forEach(item=>{
+    const base=pairToBase[item.symbol];
+    if(base){
+      const usd=parseFloat(item.lastPrice);
+      out[base]={
+        usd:usd,
+        eur:usd*usdToEur,
+        change24h:parseFloat(item.priceChangePercent)||0
+      };
+    }
+  });
+  if(Object.keys(out).length===0)throw new Error('Binance: no usable data');
+  return out;
+}
+
+// API 3: CoinGecko (last resort)
+async function fetchCoinGecko(){
+  const ids='bitcoin,ethereum,solana,binancecoin,mantle,near,cosmos,tezos';
+  const url='https://api.coingecko.com/api/v3/simple/price?ids='+ids+'&vs_currencies=usd,eur&include_24hr_change=true';
+  const data=await tryFetch(url);
+  const idToSym={bitcoin:'BTC',ethereum:'ETH',solana:'SOL',binancecoin:'BNB',mantle:'MNT',near:'NEAR',cosmos:'ATOM',tezos:'XTZ'};
+  const out={};
+  Object.entries(data).forEach(([id,p])=>{
+    const sym=idToSym[id];
+    if(sym&&p.usd){
+      out[sym]={usd:p.usd,eur:p.eur||p.usd/eurusd,change24h:p.eur_24h_change||p.usd_24h_change||0};
+    }
+  });
+  if(Object.keys(out).length===0)throw new Error('CoinGecko: no usable data');
+  return out;
+}
+
+async function refreshCryptoPrices(){
+  const statusEl=document.getElementById('crypto-updated');
+  if(statusEl)statusEl.textContent='Fetching live prices...';
+  const attempts=[
+    {name:'CryptoCompare',fn:fetchCryptoCompare},
+    {name:'Binance',fn:fetchBinance},
+    {name:'CoinGecko',fn:fetchCoinGecko}
+  ];
+  const errors=[];
+  let prices=null,source=null;
+  for(const a of attempts){
+    try{
+      prices=await a.fn();
+      source=a.name;
+      break;
+    }catch(e){
+      errors.push(a.name+': '+e.message);
+    }
+  }
+  if(!prices){
+    // All failed - show all errors
+    if(statusEl){
+      statusEl.innerHTML='<span style="color:var(--red);">All price sources failed.</span> Enter manually below.<br><span style="font-size:10px;color:var(--text3);">'+errors.join(' · ')+'</span>';
+    }
+    updateCryptoDisplay();
+    return;
+  }
+  // Merge into cache
+  Object.assign(cryptoPrices,prices);
+  // Handle proxy symbols
+  if(cryptoPrices.ETH)cryptoPrices.stETH={...cryptoPrices.ETH};
+  if(cryptoPrices.SOL)cryptoPrices.PSOL={...cryptoPrices.SOL};
+  // mUSD is pegged to $1
+  cryptoPrices.mUSD={usd:1,eur:1/eurusd,change24h:0};
+  cryptoFetchedAt=new Date().toISOString();
+  localStorage.setItem('fos_crypto_prices',JSON.stringify(cryptoPrices));
+  localStorage.setItem('fos_crypto_at',cryptoFetchedAt);
+  if(statusEl){
+    const d=new Date(cryptoFetchedAt);
+    statusEl.innerHTML='Updated '+d.toLocaleString()+' <span style="font-size:10px;color:var(--text3);">· source: '+source+'</span>';
+  }
+  updateCryptoDisplay();
+}
+
+function calcCryptoValue(){
+  let total=0;
+  Object.entries(cryptoHoldings).forEach(([exchange,coins])=>{
+    coins.forEach(c=>{
+      const price=cryptoPrices[c.symbol];
+      if(price)total+=c.qty*price.eur;
+    });
+  });
+  return total;
+}
+
+function updateCryptoDisplay(){
+  const total=calcCryptoValue();
+  wealth.cryptoLive=total;
+  localStorage.setItem('fos_wealth',JSON.stringify(wealth));
+  const totalEl=document.getElementById('crypto-total');
+  if(totalEl)totalEl.textContent=fmt(total);
+  const updEl=document.getElementById('crypto-updated');
+  if(updEl&&cryptoFetchedAt){
+    const d=new Date(cryptoFetchedAt);
+    updEl.textContent='Updated '+d.toLocaleString();
+  }
+  // Refresh exchange rows with new prices
+  renderCryptoExchanges();
+  // Update net worth header
+  updateNetWorthOnly();
+}
+
+function renderCryptoExchanges(){
+  const container=document.getElementById('crypto-exchanges');
+  if(!container)return;
+  const html=Object.entries(cryptoHoldings).map(([exchange,coins])=>{
+    let exchangeTotal=0;
+    const coinRows=coins.map(c=>{
+      const price=cryptoPrices[c.symbol];
+      const valEUR=price?c.qty*price.eur:0;
+      exchangeTotal+=valEUR;
+      const change=price?price.change24h:0;
+      const changeClass=change>=0?'green':'red';
+      const priceStr=price?'$'+price.usd.toFixed(2):'—';
+      const changeStr=price?(change>=0?'+':'')+change.toFixed(1)+'%':'—';
+      return`<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;">
+        <div><span style="font-weight:600;">${c.symbol}</span> <span style="color:var(--text3);font-size:11px;">${c.qty}</span> · <span style="color:var(--text2);font-size:11px;">${priceStr} <span class="${changeClass}">${changeStr}</span></span></div>
+        <div style="font-weight:600;">${fmt(valEUR)}</div>
+      </div>`;
+    }).join('');
+    return`<div style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:0.06em;">${exchange}</div>
+        <div style="font-size:14px;font-weight:600;">${fmt(exchangeTotal)}</div>
+      </div>
+      ${coinRows}
+    </div>`;
+  }).join('');
+  container.innerHTML=html||'<div class="empty">No crypto holdings</div>';
+}
+
+function toggleManualCrypto(){
+  const el=document.getElementById('manual-crypto');
+  const isHidden=el.style.display==='none';
+  el.style.display=isHidden?'block':'none';
+  if(isHidden)renderManualCryptoInputs();
+}
+
+function renderManualCryptoInputs(){
+  // Collect unique symbols across all holdings
+  const symbols=new Set();
+  Object.values(cryptoHoldings).forEach(arr=>arr.forEach(c=>symbols.add(c.symbol)));
+  const symbolList=Array.from(symbols).sort();
+  document.getElementById('manual-crypto-inputs').innerHTML=symbolList.map(sym=>{
+    const currentPrice=cryptoPrices[sym]?cryptoPrices[sym].usd:'';
+    return`<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:600;width:60px;">${sym}</div>
+      <input type="number" step="0.0001" inputmode="decimal" id="manual-price-${sym}" value="${currentPrice||''}" placeholder="USD" style="margin-bottom:0;padding:7px 10px;font-size:13px;">
+    </div>`;
+  }).join('');
+}
+
+function saveManualPrices(){
+  const symbols=new Set();
+  Object.values(cryptoHoldings).forEach(arr=>arr.forEach(c=>symbols.add(c.symbol)));
+  let changed=0;
+  symbols.forEach(sym=>{
+    const input=document.getElementById('manual-price-'+sym);
+    if(input){
+      const usd=parseFloat(input.value);
+      if(!isNaN(usd)&&usd>=0){
+        cryptoPrices[sym]={usd,eur:usd/eurusd,change24h:0};
+        changed++;
+      }
+    }
+  });
+  // Propagate proxy prices
+  if(cryptoPrices.ETH)cryptoPrices.stETH={...cryptoPrices.ETH};
+  if(cryptoPrices.SOL)cryptoPrices.PSOL={...cryptoPrices.SOL};
+  cryptoFetchedAt=new Date().toISOString();
+  localStorage.setItem('fos_crypto_prices',JSON.stringify(cryptoPrices));
+  localStorage.setItem('fos_crypto_at',cryptoFetchedAt);
+  flash('Manual prices saved ('+changed+')');
+  document.getElementById('manual-crypto').style.display='none';
+  updateCryptoDisplay();
+}
+
 
 // ── Freedom ────────────────────────────────────────────────────────
 function syncInput(sliderId,inputId){document.getElementById(inputId).value=document.getElementById(sliderId).value;}
@@ -1037,9 +1364,9 @@ function syncSlider(sliderId,inputId){
   if(!isNaN(v))sl.value=Math.min(Math.max(v,parseFloat(sl.min)),parseFloat(sl.max));
 }
 function updateFreedom(){
-  const income=parseFloat(document.getElementById('sl-income-val').value)||4000;
-  const invest=parseFloat(document.getElementById('sl-invest-val').value)||500;
-  const age=parseFloat(document.getElementById('sl-age-val').value)||32;
+  const income=parseFloat(document.getElementById('sl-income-val').value)||5000;
+  const invest=parseFloat(document.getElementById('sl-invest-val').value)||1000;
+  const age=parseFloat(document.getElementById('sl-age-val').value)||33;
   const assets=parseFloat(document.getElementById('sl-assets-val').value)||0;
   const rate=(parseFloat(document.getElementById('sl-rate-val').value)||7)/100;
   const target=income*12*25;
@@ -1086,10 +1413,18 @@ async function getInsight(){
 function saveApiKey(){localStorage.setItem('fos_apikey',document.getElementById('api-key-input').value.trim());flash('API key saved');}
 function saveCurrency(){currency=document.getElementById('currency-select').value;localStorage.setItem('fos_currency',currency);}
 function exportData(){
-  const blob=new Blob([JSON.stringify({transactions,wealth,positions,cashAccounts,flat,exportDate:new Date().toISOString()},null,2)],{type:'application/json'});
+  const blob=new Blob([JSON.stringify({transactions,wealth,positions,cashAccounts,flat,cryptoHoldings,cryptoPrices,exportDate:new Date().toISOString()},null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='finance-os-export.json';a.click();
 }
-function clearData(){if(confirm('Delete all data?')){localStorage.clear();location.reload();}}
+function clearData(){if(confirm('Delete ALL data including bank, flat, crypto, and transactions? This cannot be undone.')){localStorage.clear();location.reload();}}
+function resetTransactionsOnly(){
+  if(confirm('Reload transactions from seed? Bank accounts, flat details, crypto holdings, and portfolio data will be preserved.')){
+    transactions=JSON.parse(JSON.stringify(SEED_TX));
+    localStorage.setItem('fos_tx',JSON.stringify(transactions));
+    flash('Transactions reloaded');
+    if(document.getElementById('screen-overview').classList.contains('active'))renderOverview();
+  }
+}
 function resetPositions(){
   if(confirm('Reset portfolio to IBKR May 8 snapshot?')){
     positions=JSON.parse(JSON.stringify(SEED));
@@ -1109,7 +1444,15 @@ function showScreen(id,btn){
   btn.classList.add('active');
   if(id==='overview')renderOverview();
   if(id==='wealth')renderWealth();
-  if(id==='freedom')updateFreedom();
+  if(id==='freedom'){
+    // Auto-sync investable assets to live portfolio + crypto value (your real net investable)
+    const totalInvestable=wealth.broker+(wealth.cryptoLive||0);
+    if(totalInvestable>0){
+      document.getElementById('sl-assets-val').value=Math.round(totalInvestable);
+      document.getElementById('sl-assets').value=Math.min(Math.round(totalInvestable),2000000);
+    }
+    updateFreedom();
+  }
   if(id==='portfolio')renderPortfolio();
   if(id==='trades'){
     const tlast=document.getElementById('trades-last');
