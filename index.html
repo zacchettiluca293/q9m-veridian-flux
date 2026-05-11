@@ -698,7 +698,12 @@ function renderOverview(){
       return curM>=txM&&curM<txM+tx.months;
     }
     return d.getMonth()===viewMonth&&d.getFullYear()===viewYear;
-  }).slice(0,15);
+  }).sort((a,b)=>{
+    // Newest date first; for same date, income before expense
+    if(a.date!==b.date)return b.date.localeCompare(a.date);
+    if(a.type!==b.type)return a.type==='income'?-1:1;
+    return 0;
+  });
   document.getElementById('tx-list').innerHTML=monthTx.map(tx=>{
     const d=new Date(tx.date),dateStr=d.toLocaleDateString('default',{day:'numeric',month:'short'});
     const dispAmt=tx.amort?tx.amount/tx.months:tx.amount;
