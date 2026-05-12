@@ -187,26 +187,35 @@
 <div id="lock-screen" class="lock-screen">
   <div class="lock-icon">🔒</div>
   <div class="lock-title" id="lock-title">Finance OS</div>
-  <div class="lock-sub" id="lock-sub">Enter your PIN</div>
-  <div class="pin-dots" id="pin-dots">
-    <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+  <div class="lock-sub" id="lock-sub">Tap to unlock</div>
+  <!-- Face ID primary unlock - only visible when enrolled -->
+  <div id="faceid-primary" style="display:none;flex-direction:column;align-items:center;">
+    <button class="face-id-btn" onclick="tryFaceID()" style="width:90px;height:90px;font-size:42px;margin-top:0;margin-bottom:16px;">🆔</button>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:24px;">Tap to unlock with Face ID</div>
+    <button class="lock-link" onclick="showPinPad()">Use PIN instead</button>
   </div>
-  <div class="pin-pad" id="pin-pad">
-    <button class="pin-key" onclick="pinKey(1)">1</button>
-    <button class="pin-key" onclick="pinKey(2)">2</button>
-    <button class="pin-key" onclick="pinKey(3)">3</button>
-    <button class="pin-key" onclick="pinKey(4)">4</button>
-    <button class="pin-key" onclick="pinKey(5)">5</button>
-    <button class="pin-key" onclick="pinKey(6)">6</button>
-    <button class="pin-key" onclick="pinKey(7)">7</button>
-    <button class="pin-key" onclick="pinKey(8)">8</button>
-    <button class="pin-key" onclick="pinKey(9)">9</button>
-    <button class="pin-key special" id="pin-faceid" onclick="tryFaceID()">Face ID</button>
-    <button class="pin-key" onclick="pinKey(0)">0</button>
-    <button class="pin-key special" onclick="pinDelete()">←</button>
+  <!-- PIN pad - shown if Face ID not enrolled, or as fallback -->
+  <div id="pin-pad-container" style="display:flex;flex-direction:column;align-items:center;">
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinKey(1)">1</button>
+      <button class="pin-key" onclick="pinKey(2)">2</button>
+      <button class="pin-key" onclick="pinKey(3)">3</button>
+      <button class="pin-key" onclick="pinKey(4)">4</button>
+      <button class="pin-key" onclick="pinKey(5)">5</button>
+      <button class="pin-key" onclick="pinKey(6)">6</button>
+      <button class="pin-key" onclick="pinKey(7)">7</button>
+      <button class="pin-key" onclick="pinKey(8)">8</button>
+      <button class="pin-key" onclick="pinKey(9)">9</button>
+      <button class="pin-key special" id="pin-faceid-link" onclick="showFaceIdPrimary()" style="font-size:13px;">Face ID</button>
+      <button class="pin-key" onclick="pinKey(0)">0</button>
+      <button class="pin-key special" onclick="pinDelete()">←</button>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+    <button class="lock-link" id="forgot-pin-btn" onclick="showRecoveryEntry()">Forgot PIN</button>
   </div>
-  <div class="pin-error" id="pin-error"></div>
-  <button class="lock-link" id="forgot-pin-btn" onclick="showRecoveryEntry()">Forgot PIN</button>
 </div>
 
 <!-- SETUP SCREEN: shown on first launch to create PIN -->
@@ -604,9 +613,44 @@ function showLockUI(which){
   document.getElementById('recovery-entry-screen').classList.remove('visible');
   document.body.style.overflow=which?'hidden':'';
   if(which)document.getElementById(which).classList.add('visible');
-  // Show/hide Face ID button on lock screen based on enrollment
-  const fid=document.getElementById('pin-faceid');
-  if(fid)fid.style.visibility=faceIDEnrolled()?'visible':'hidden';
+  // Configure lock-screen layout based on Face ID enrollment
+  if(which==='lock-screen'){
+    const enrolled=faceIDEnrolled();
+    const faceidPrimary=document.getElementById('faceid-primary');
+    const pinContainer=document.getElementById('pin-pad-container');
+    const sub=document.getElementById('lock-sub');
+    if(enrolled){
+      // Default to Face ID prompt
+      faceidPrimary.style.display='flex';
+      pinContainer.style.display='none';
+      sub.textContent='Tap to unlock';
+    } else {
+      faceidPrimary.style.display='none';
+      pinContainer.style.display='flex';
+      sub.textContent='Enter your PIN';
+      // Hide the Face ID link in PIN pad if not enrolled
+      const fidLink=document.getElementById('pin-faceid-link');
+      if(fidLink)fidLink.style.visibility='hidden';
+    }
+  }
+}
+
+function showPinPad(){
+  document.getElementById('faceid-primary').style.display='none';
+  document.getElementById('pin-pad-container').style.display='flex';
+  document.getElementById('lock-sub').textContent='Enter your PIN';
+  // Show Face ID link in PIN pad so user can return
+  const fidLink=document.getElementById('pin-faceid-link');
+  if(fidLink&&faceIDEnrolled())fidLink.style.visibility='visible';
+}
+
+function showFaceIdPrimary(){
+  if(!faceIDEnrolled())return;
+  document.getElementById('faceid-primary').style.display='flex';
+  document.getElementById('pin-pad-container').style.display='none';
+  document.getElementById('lock-sub').textContent='Tap to unlock';
+  // Auto-trigger Face ID since user just tapped a button - this is a user gesture
+  setTimeout(()=>tryFaceID(),100);
 }
 
 function setupKey(d){
@@ -791,8 +835,6 @@ function lockNow(){
   paintDots('pin-dots',0);
   document.getElementById('pin-error').textContent='';
   showLockUI('lock-screen');
-  // Trigger Face ID immediately on lock screen open if available
-  setTimeout(()=>tryFaceID(),300);
 }
 
 // ── Face ID via WebAuthn ──────────────────────────────────────────
@@ -848,7 +890,7 @@ async function enrollFaceID(){
     localStorage.setItem('fos_faceid_credid',bufferToBase64(cred.rawId));
     flash('Face ID enabled');
   } catch(e){
-    alert('Could not enable Face ID. You can still use your PIN.');
+    alert('Could not enable Face ID: '+(e.message||e.name||'unknown error')+'. You can still use your PIN.');
   }
 }
 
@@ -2082,18 +2124,13 @@ applyPrivateMode();
 const stale=!fxFetchedAt||(Date.now()-new Date(fxFetchedAt).getTime())>86400000;
 if(stale)fetchLiveFX();
 
-// Lock on startup: show setup if no PIN, otherwise lock screen + try Face ID
+// Lock on startup: show setup if no PIN, otherwise lock screen
+// Face ID requires user tap to trigger (iOS Safari WebAuthn restriction)
 (function initLock(){
   if(!pinIsSet()){
-    // First time - show setup
     showLockUI('setup-screen');
   } else {
-    // Already has PIN - show lock screen
     showLockUI('lock-screen');
-    // Auto-prompt Face ID if enrolled
-    if(faceIDEnrolled()){
-      setTimeout(()=>tryFaceID(),400);
-    }
   }
 })();
 
