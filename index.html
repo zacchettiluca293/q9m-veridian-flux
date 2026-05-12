@@ -154,6 +154,10 @@
   .flat-stat-val{font-size:14px;font-weight:600;}
   .delete-x{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1;}
   .delete-x:hover{color:var(--red);}
+  .private-toggle{position:fixed;top:24px;right:16px;z-index:200;background:var(--bg2);border:0.5px solid var(--border2);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--text2);}
+  .private-toggle:active{background:var(--bg3);}
+  .private-mode .private-mask,.private-mode .nw-total,.private-mode .metric-value,.private-mode .port-current-val,.private-mode .port-stat-val,.private-mode .port-gain-line,.private-mode .pos-val,.private-mode .pos-pnl,.private-mode .tx-amount,.private-mode .asset-val,.private-mode .bar-amt,.private-mode .cash-total-val,.private-mode .flat-stat-val,.private-mode .proj-val,.private-mode .retire-year,.private-mode .port-total,.private-mode .port-current{filter:blur(8px);user-select:none;transition:filter 0.15s;}
+  .private-mode .private-mask:active,.private-mode .nw-total:active,.private-mode .metric-value:active,.private-mode .port-current-val:active,.private-mode .pos-val:active,.private-mode .tx-amount:active,.private-mode .asset-val:active{filter:none;}
 </style>
 </head>
 <body>
@@ -298,7 +302,7 @@
   <div class="screen-header"><div class="screen-title">Wealth</div><div class="screen-sub">All assets. One view.</div></div>
   <div class="card">
     <div class="card-title">Net worth (your share)</div>
-    <div class="nw-total" id="nw-total">€0</div>
+    <div class="nw-total private-mask" id="nw-total">€0</div>
     <div class="divider"></div>
     <div id="asset-list"><div class="empty">Add your assets below</div></div>
   </div>
@@ -345,7 +349,13 @@
     <div class="divider"></div>
     <div id="crypto-exchanges"></div>
     <button class="btn-sm" onclick="refreshCryptoPrices()" style="width:100%;padding:10px;margin-top:8px;">Refresh prices</button>
+    <button class="btn-sm" onclick="toggleEditCrypto()" style="width:100%;padding:10px;margin-top:6px;">Edit holdings</button>
     <button class="btn-sm" onclick="toggleManualCrypto()" style="width:100%;padding:10px;margin-top:6px;">Enter prices manually (fallback)</button>
+    <div id="edit-crypto" style="display:none;margin-top:12px;padding:12px;background:var(--bg3);border-radius:var(--radius-sm);">
+      <p style="font-size:11px;color:var(--text2);margin-bottom:10px;">Update quantities or add/remove coins per exchange.</p>
+      <div id="edit-crypto-list"></div>
+      <button class="btn-sm" onclick="addCryptoExchange()" style="width:100%;padding:10px;margin-top:8px;">+ Add exchange</button>
+    </div>
     <div id="manual-crypto" style="display:none;margin-top:12px;padding:12px;background:var(--bg3);border-radius:var(--radius-sm);">
       <p style="font-size:11px;color:var(--text2);margin-bottom:10px;">Enter current USD price per coin. EUR is auto-computed from FX rate.</p>
       <div id="manual-crypto-inputs"></div>
@@ -431,11 +441,14 @@
 </nav>
 
 </div>
+<button class="private-toggle" id="private-toggle" onclick="togglePrivate()" title="Toggle private mode">👁</button>
 <div class="success-flash" id="flash">Saved</div>
 
 <script>
 // ── State ──────────────────────────────────────────────────────────
 let txType='expense';
+// Private mode: hides all monetary values until toggled off. Persisted across sessions.
+let privateMode=localStorage.getItem('fos_private')==='1';
 
 // SEED transactions from Money Manager export May 2026 - Nov 2027
 const SEED_TX=[
@@ -624,28 +637,69 @@ document.getElementById('tx-date').value=new Date().toISOString().split('T')[0];
 const savedKey=localStorage.getItem('fos_apikey');
 if(savedKey)document.getElementById('api-key-input').value=savedKey;
 
+function togglePrivate(){
+  privateMode=!privateMode;
+  localStorage.setItem('fos_private',privateMode?'1':'0');
+  applyPrivateMode();
+}
+
+function applyPrivateMode(){
+  document.body.classList.toggle('private-mode',privateMode);
+  const btn=document.getElementById('private-toggle');
+  if(btn)btn.textContent=privateMode?'👁‍🗨':'👁';
+}
+
 function flash(msg){const el=document.getElementById('flash');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1800);}
 
 // ── Live FX ────────────────────────────────────────────────────────
 async function fetchLiveFX(){
   const status=document.getElementById('fx-status');
-  if(status)status.textContent='Fetching from ECB...';
-  try{
-    const res=await fetch('https://api.frankfurter.app/latest?from=EUR&to=USD,GBP,AED');
-    const data=await res.json();
-    if(data.rates){
-      if(data.rates.USD){eurusd=data.rates.USD;localStorage.setItem('fos_eurusd',eurusd);}
-      if(data.rates.GBP){eurgbp=data.rates.GBP;localStorage.setItem('fos_eurgbp',eurgbp);}
-      if(data.rates.AED){euraed=data.rates.AED;localStorage.setItem('fos_euraed',euraed);}
-      fxFetchedAt=new Date().toISOString();
-      localStorage.setItem('fos_fx_at',fxFetchedAt);
-      updateFXDisplay();
-      if(document.getElementById('screen-portfolio').classList.contains('active'))renderPortfolio();
-      if(document.getElementById('screen-wealth').classList.contains('active'))renderWealth();
-    }
-  }catch(e){
-    if(status)status.textContent='Failed. Using stored rates.';
+  if(status)status.textContent='Fetching rates...';
+  const attempts=[
+    {name:'Frankfurter (ECB)',fn:async()=>{
+      const r=await fetch('https://api.frankfurter.app/latest?from=EUR&to=USD,GBP,AED');
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      const d=await r.json();
+      if(!d.rates)throw new Error('no rates');
+      return {USD:d.rates.USD,GBP:d.rates.GBP,AED:d.rates.AED};
+    }},
+    {name:'exchangerate.host',fn:async()=>{
+      const r=await fetch('https://api.exchangerate.host/latest?base=EUR&symbols=USD,GBP,AED');
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      const d=await r.json();
+      if(!d.rates)throw new Error('no rates');
+      return {USD:d.rates.USD,GBP:d.rates.GBP,AED:d.rates.AED};
+    }},
+    {name:'open.er-api.com',fn:async()=>{
+      const r=await fetch('https://open.er-api.com/v6/latest/EUR');
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      const d=await r.json();
+      if(!d.rates)throw new Error('no rates');
+      return {USD:d.rates.USD,GBP:d.rates.GBP,AED:d.rates.AED};
+    }}
+  ];
+  const errors=[];
+  let rates=null,source=null;
+  for(const a of attempts){
+    try{rates=await a.fn();source=a.name;break;}
+    catch(e){errors.push(a.name+': '+e.message);}
   }
+  if(!rates){
+    if(status)status.innerHTML='<span style="color:var(--red);">All FX sources failed.</span> Using stored rates.<br><span style="font-size:10px;color:var(--text3);">'+errors.join(' · ')+'</span>';
+    return;
+  }
+  if(rates.USD){eurusd=rates.USD;localStorage.setItem('fos_eurusd',eurusd);}
+  if(rates.GBP){eurgbp=rates.GBP;localStorage.setItem('fos_eurgbp',eurgbp);}
+  if(rates.AED){euraed=rates.AED;localStorage.setItem('fos_euraed',euraed);}
+  fxFetchedAt=new Date().toISOString();
+  localStorage.setItem('fos_fx_at',fxFetchedAt);
+  if(status){
+    const d=new Date(fxFetchedAt);
+    status.innerHTML='Updated '+d.toLocaleString()+' <span style="font-size:10px;color:var(--text3);">· source: '+source+'</span>';
+  }
+  updateFXDisplay();
+  if(document.getElementById('screen-portfolio').classList.contains('active'))renderPortfolio();
+  if(document.getElementById('screen-wealth').classList.contains('active'))renderWealth();
 }
 
 function updateFXDisplay(){
@@ -959,8 +1013,8 @@ function renderCashAccounts(){
   const list=document.getElementById('cash-list');
   list.innerHTML=cashAccounts.map((c,i)=>`
     <div class="cash-row">
-      <input type="text" value="${c.bank||''}" onchange="updateCashField(${i},'bank',this.value)">
-      <select onchange="updateCashField(${i},'currency',this.value);recomputeCashTotal();">
+      <input type="text" value="${c.bank||''}" oninput="updateCashField(${i},'bank',this.value)" onblur="updateCashField(${i},'bank',this.value)">
+      <select onchange="updateCashField(${i},'currency',this.value);recomputeCashTotal();updateNetWorthOnly();">
         <option ${c.currency==='EUR'?'selected':''}>EUR</option>
         <option ${c.currency==='AED'?'selected':''}>AED</option>
         <option ${c.currency==='USD'?'selected':''}>USD</option>
@@ -1355,6 +1409,88 @@ function saveManualPrices(){
   updateCryptoDisplay();
 }
 
+function toggleEditCrypto(){
+  const el=document.getElementById('edit-crypto');
+  const isHidden=el.style.display==='none';
+  el.style.display=isHidden?'block':'none';
+  if(isHidden)renderEditCryptoList();
+}
+
+function renderEditCryptoList(){
+  const container=document.getElementById('edit-crypto-list');
+  container.innerHTML=Object.entries(cryptoHoldings).map(([exchange,coins])=>`
+    <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border);">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+        <input type="text" value="${exchange}" oninput="renameExchange('${exchange}',this.value)" onblur="renameExchange('${exchange}',this.value)" style="flex:1;font-size:13px;font-weight:600;padding:7px 10px;margin-bottom:0;">
+        <button class="btn-sm" onclick="removeExchange('${exchange}')" style="color:var(--red);padding:6px 10px;">Remove</button>
+      </div>
+      ${coins.map((c,i)=>`
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+          <input type="text" value="${c.symbol}" oninput="updateCoinSymbol('${exchange}',${i},this.value)" onblur="updateCoinSymbol('${exchange}',${i},this.value)" placeholder="BTC" style="width:80px;font-size:13px;padding:6px 8px;margin-bottom:0;text-transform:uppercase;">
+          <input type="number" step="0.00000001" value="${c.qty}" oninput="updateCoinQty('${exchange}',${i},this.value)" placeholder="0.0" style="flex:1;font-size:13px;padding:6px 8px;margin-bottom:0;">
+          <button onclick="removeCoin('${exchange}',${i})" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0 6px;">×</button>
+        </div>
+      `).join('')}
+      <button class="btn-sm" onclick="addCoinToExchange('${exchange}')" style="width:100%;padding:8px;margin-top:6px;font-size:12px;">+ Add coin</button>
+    </div>
+  `).join('')||'<div class="empty">No exchanges. Click below to add.</div>';
+}
+
+function updateCoinSymbol(exchange,idx,sym){
+  if(!cryptoHoldings[exchange])return;
+  cryptoHoldings[exchange][idx].symbol=sym.toUpperCase().trim();
+  localStorage.setItem('fos_crypto',JSON.stringify(cryptoHoldings));
+}
+
+function updateCoinQty(exchange,idx,qty){
+  if(!cryptoHoldings[exchange])return;
+  cryptoHoldings[exchange][idx].qty=parseFloat(qty)||0;
+  localStorage.setItem('fos_crypto',JSON.stringify(cryptoHoldings));
+  updateCryptoDisplay();
+}
+
+function removeCoin(exchange,idx){
+  if(!cryptoHoldings[exchange])return;
+  cryptoHoldings[exchange].splice(idx,1);
+  localStorage.setItem('fos_crypto',JSON.stringify(cryptoHoldings));
+  renderEditCryptoList();
+  updateCryptoDisplay();
+}
+
+function addCoinToExchange(exchange){
+  if(!cryptoHoldings[exchange])return;
+  cryptoHoldings[exchange].push({symbol:'',qty:0});
+  localStorage.setItem('fos_crypto',JSON.stringify(cryptoHoldings));
+  renderEditCryptoList();
+}
+
+function renameExchange(oldName,newName){
+  if(oldName===newName||!newName)return;
+  if(cryptoHoldings[newName])return; // don't overwrite existing
+  cryptoHoldings[newName]=cryptoHoldings[oldName];
+  delete cryptoHoldings[oldName];
+  localStorage.setItem('fos_crypto',JSON.stringify(cryptoHoldings));
+  // Don't re-render while typing - only on blur
+}
+
+function removeExchange(exchange){
+  if(!confirm('Remove '+exchange+' and all its coins?'))return;
+  delete cryptoHoldings[exchange];
+  localStorage.setItem('fos_crypto',JSON.stringify(cryptoHoldings));
+  renderEditCryptoList();
+  updateCryptoDisplay();
+}
+
+function addCryptoExchange(){
+  let name=prompt('Exchange name:');
+  if(!name)return;
+  name=name.trim();
+  if(!name||cryptoHoldings[name])return;
+  cryptoHoldings[name]=[];
+  localStorage.setItem('fos_crypto',JSON.stringify(cryptoHoldings));
+  renderEditCryptoList();
+}
+
 
 // ── Freedom ────────────────────────────────────────────────────────
 function syncInput(sliderId,inputId){document.getElementById(inputId).value=document.getElementById(sliderId).value;}
@@ -1445,11 +1581,10 @@ function showScreen(id,btn){
   if(id==='overview')renderOverview();
   if(id==='wealth')renderWealth();
   if(id==='freedom'){
-    // Auto-sync investable assets to live portfolio + crypto value (your real net investable)
-    const totalInvestable=wealth.broker+(wealth.cryptoLive||0);
-    if(totalInvestable>0){
-      document.getElementById('sl-assets-val').value=Math.round(totalInvestable);
-      document.getElementById('sl-assets').value=Math.min(Math.round(totalInvestable),2000000);
+    // Auto-sync investable assets to IBKR portfolio value only (excludes crypto - speculative; excludes cash - not invested)
+    if(wealth.broker>0){
+      document.getElementById('sl-assets-val').value=Math.round(wealth.broker);
+      document.getElementById('sl-assets').value=Math.min(Math.round(wealth.broker),2000000);
     }
     updateFreedom();
   }
@@ -1461,8 +1596,24 @@ function showScreen(id,btn){
   if(id==='settings')updateFXDisplay();
 }
 
+// Init: compute IBKR portfolio value from positions on first boot so Wealth shows it without
+// requiring user to visit Portfolio tab first
+(function initBrokerValue(){
+  if(positions&&positions.length>0){
+    let totalValue=0;
+    positions.forEach(p=>{
+      const cur=p.currency||'USD';
+      const currentEUR=toEUR(p.currentPrice,cur);
+      totalValue+=currentEUR*p.qty;
+    });
+    wealth.broker=Math.round(totalValue);
+    localStorage.setItem('fos_wealth',JSON.stringify(wealth));
+  }
+})();
+
 updateFreedom();
 updateFXDisplay();
+applyPrivateMode();
 const stale=!fxFetchedAt||(Date.now()-new Date(fxFetchedAt).getTime())>86400000;
 if(stale)fetchLiveFX();
 </script>
