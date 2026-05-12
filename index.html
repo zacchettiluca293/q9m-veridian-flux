@@ -187,35 +187,26 @@
 <div id="lock-screen" class="lock-screen">
   <div class="lock-icon">🔒</div>
   <div class="lock-title" id="lock-title">Finance OS</div>
-  <div class="lock-sub" id="lock-sub">Tap to unlock</div>
-  <!-- Face ID primary unlock - only visible when enrolled -->
-  <div id="faceid-primary" style="display:none;flex-direction:column;align-items:center;">
-    <button class="face-id-btn" onclick="tryFaceID()" style="width:90px;height:90px;font-size:42px;margin-top:0;margin-bottom:16px;">🆔</button>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:24px;">Tap to unlock with Face ID</div>
-    <button class="lock-link" onclick="showPinPad()">Use PIN instead</button>
+  <div class="lock-sub" id="lock-sub">Enter your PIN</div>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
   </div>
-  <!-- PIN pad - shown if Face ID not enrolled, or as fallback -->
-  <div id="pin-pad-container" style="display:flex;flex-direction:column;align-items:center;">
-    <div class="pin-dots" id="pin-dots">
-      <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
-    </div>
-    <div class="pin-pad">
-      <button class="pin-key" onclick="pinKey(1)">1</button>
-      <button class="pin-key" onclick="pinKey(2)">2</button>
-      <button class="pin-key" onclick="pinKey(3)">3</button>
-      <button class="pin-key" onclick="pinKey(4)">4</button>
-      <button class="pin-key" onclick="pinKey(5)">5</button>
-      <button class="pin-key" onclick="pinKey(6)">6</button>
-      <button class="pin-key" onclick="pinKey(7)">7</button>
-      <button class="pin-key" onclick="pinKey(8)">8</button>
-      <button class="pin-key" onclick="pinKey(9)">9</button>
-      <button class="pin-key special" id="pin-faceid-link" onclick="showFaceIdPrimary()" style="font-size:13px;">Face ID</button>
-      <button class="pin-key" onclick="pinKey(0)">0</button>
-      <button class="pin-key special" onclick="pinDelete()">←</button>
-    </div>
-    <div class="pin-error" id="pin-error"></div>
-    <button class="lock-link" id="forgot-pin-btn" onclick="showRecoveryEntry()">Forgot PIN</button>
+  <div class="pin-pad">
+    <button class="pin-key" onclick="pinKey(1)">1</button>
+    <button class="pin-key" onclick="pinKey(2)">2</button>
+    <button class="pin-key" onclick="pinKey(3)">3</button>
+    <button class="pin-key" onclick="pinKey(4)">4</button>
+    <button class="pin-key" onclick="pinKey(5)">5</button>
+    <button class="pin-key" onclick="pinKey(6)">6</button>
+    <button class="pin-key" onclick="pinKey(7)">7</button>
+    <button class="pin-key" onclick="pinKey(8)">8</button>
+    <button class="pin-key" onclick="pinKey(9)">9</button>
+    <button class="pin-key special" style="visibility:hidden;"></button>
+    <button class="pin-key" onclick="pinKey(0)">0</button>
+    <button class="pin-key special" onclick="pinDelete()">←</button>
   </div>
+  <div class="pin-error" id="pin-error"></div>
+  <button class="lock-link" onclick="showRecoveryEntry()">Forgot PIN</button>
 </div>
 
 <!-- SETUP SCREEN: shown on first launch to create PIN -->
@@ -523,10 +514,9 @@
   <div class="card">
     <div class="card-title">Security</div>
     <button class="btn btn-secondary" style="margin-bottom:10px;" onclick="lockNow()">🔒 Lock now</button>
-    <button class="btn btn-secondary" style="margin-bottom:10px;" id="faceid-btn" onclick="toggleFaceID()">Enable Face ID</button>
     <button class="btn btn-secondary" style="margin-bottom:10px;" onclick="changePin()">Change PIN</button>
     <button class="btn btn-secondary" style="color:var(--amber);" onclick="regenerateRecovery()">Regenerate recovery code</button>
-    <p class="api-note" style="margin-top:8px;">App auto-locks after 60 seconds away in background.</p>
+    <p class="api-note" style="margin-top:8px;">App auto-locks after 60 seconds away in background.<br>Face ID is not supported in iOS PWAs - PIN only.</p>
   </div>
   <div class="card">
     <div class="card-title">Display currency</div>
@@ -613,44 +603,6 @@ function showLockUI(which){
   document.getElementById('recovery-entry-screen').classList.remove('visible');
   document.body.style.overflow=which?'hidden':'';
   if(which)document.getElementById(which).classList.add('visible');
-  // Configure lock-screen layout based on Face ID enrollment
-  if(which==='lock-screen'){
-    const enrolled=faceIDEnrolled();
-    const faceidPrimary=document.getElementById('faceid-primary');
-    const pinContainer=document.getElementById('pin-pad-container');
-    const sub=document.getElementById('lock-sub');
-    if(enrolled){
-      // Default to Face ID prompt
-      faceidPrimary.style.display='flex';
-      pinContainer.style.display='none';
-      sub.textContent='Tap to unlock';
-    } else {
-      faceidPrimary.style.display='none';
-      pinContainer.style.display='flex';
-      sub.textContent='Enter your PIN';
-      // Hide the Face ID link in PIN pad if not enrolled
-      const fidLink=document.getElementById('pin-faceid-link');
-      if(fidLink)fidLink.style.visibility='hidden';
-    }
-  }
-}
-
-function showPinPad(){
-  document.getElementById('faceid-primary').style.display='none';
-  document.getElementById('pin-pad-container').style.display='flex';
-  document.getElementById('lock-sub').textContent='Enter your PIN';
-  // Show Face ID link in PIN pad so user can return
-  const fidLink=document.getElementById('pin-faceid-link');
-  if(fidLink&&faceIDEnrolled())fidLink.style.visibility='visible';
-}
-
-function showFaceIdPrimary(){
-  if(!faceIDEnrolled())return;
-  document.getElementById('faceid-primary').style.display='flex';
-  document.getElementById('pin-pad-container').style.display='none';
-  document.getElementById('lock-sub').textContent='Tap to unlock';
-  // Auto-trigger Face ID since user just tapped a button - this is a user gesture
-  setTimeout(()=>tryFaceID(),100);
 }
 
 function setupKey(d){
@@ -837,83 +789,13 @@ function lockNow(){
   showLockUI('lock-screen');
 }
 
-// ── Face ID via WebAuthn ──────────────────────────────────────────
-async function tryFaceID(){
-  if(!window.PublicKeyCredential)return;
-  const credId=localStorage.getItem('fos_faceid_credid');
-  if(!credId)return; // not enrolled yet
-  try{
-    const challenge=new Uint8Array(32);
-    crypto.getRandomValues(challenge);
-    await navigator.credentials.get({
-      publicKey:{
-        challenge,
-        allowCredentials:[{id:base64ToBuffer(credId),type:'public-key'}],
-        userVerification:'required',
-        timeout:60000
-      }
-    });
-    // Success - unlock without needing PIN
-    pinAttempts=0;
-    localStorage.setItem('fos_pin_attempts','0');
-    unlock();
-  } catch(e){
-    // User cancelled or failed - silently fall back to PIN
-  }
-}
-
-async function enrollFaceID(){
-  if(!window.PublicKeyCredential){
-    alert('Face ID is not supported in this browser.');
-    return;
-  }
-  try{
-    const challenge=new Uint8Array(32);
-    crypto.getRandomValues(challenge);
-    const userId=new Uint8Array(16);
-    crypto.getRandomValues(userId);
-    const cred=await navigator.credentials.create({
-      publicKey:{
-        challenge,
-        rp:{name:'Finance OS'},
-        user:{id:userId,name:'user@finance-os.local',displayName:'Finance OS User'},
-        pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
-        authenticatorSelection:{
-          authenticatorAttachment:'platform',
-          userVerification:'required',
-          residentKey:'preferred'
-        },
-        timeout:60000,
-        attestation:'none'
-      }
-    });
-    localStorage.setItem('fos_faceid_credid',bufferToBase64(cred.rawId));
-    flash('Face ID enabled');
-  } catch(e){
-    alert('Could not enable Face ID: '+(e.message||e.name||'unknown error')+'. You can still use your PIN.');
-  }
-}
-
-function disableFaceID(){
-  localStorage.removeItem('fos_faceid_credid');
-  flash('Face ID disabled');
-}
-
-function toggleFaceID(){
-  if(faceIDEnrolled()){
-    if(confirm('Disable Face ID? You will only be able to unlock with your PIN.')){
-      disableFaceID();
-      updateFaceIDButtonLabel();
-    }
-  } else {
-    enrollFaceID().then(updateFaceIDButtonLabel);
-  }
-}
-
-function updateFaceIDButtonLabel(){
-  const btn=document.getElementById('faceid-btn');
-  if(btn)btn.textContent=faceIDEnrolled()?'🆔 Face ID enabled - tap to disable':'Enable Face ID';
-}
+// ── Face ID removed: iOS PWA limitation ───────────────────────────
+// WebAuthn doesn't work reliably in PWAs added to iOS home screen.
+// Apple isolates PWA storage from Safari, so credentials don't carry across contexts.
+// PIN is the primary unlock method.
+function faceIDEnrolled(){return false;}
+// Clean up any stale credential ID from prior attempts
+localStorage.removeItem('fos_faceid_credid');
 
 function changePin(){
   if(!confirm('Change your PIN? You will be asked to set a new 4-digit PIN.'))return;
@@ -940,21 +822,8 @@ async function regenerateRecovery(){
 }
 
 function bufferToBase64(buf){
-  const bytes=new Uint8Array(buf);
-  let s='';
-  bytes.forEach(b=>{s+=String.fromCharCode(b);});
-  return btoa(s);
-}
-
-function base64ToBuffer(b64){
-  const bin=atob(b64);
-  const buf=new Uint8Array(bin.length);
-  for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
-  return buf.buffer;
-}
-
-function faceIDEnrolled(){
-  return !!localStorage.getItem('fos_faceid_credid');
+  // legacy helper - kept harmless for compat
+  const bytes=new Uint8Array(buf);let s='';bytes.forEach(b=>{s+=String.fromCharCode(b);});return btoa(s);
 }
 
 // SEED transactions from Money Manager export May 2026 - Nov 2027
@@ -2100,7 +1969,7 @@ function showScreen(id,btn){
     const tlast=document.getElementById('trades-last');
     if(tlast)tlast.textContent=posUpdatedAt;
   }
-  if(id==='settings'){updateFXDisplay();updateFaceIDButtonLabel();}
+  if(id==='settings'){updateFXDisplay();}
 }
 
 // Init: compute IBKR portfolio value from positions on first boot so Wealth shows it without
