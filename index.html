@@ -94,6 +94,14 @@
   .divider{height:0.5px;background:var(--border);margin:16px 0;}
   .success-flash{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;font-size:13px;font-weight:600;padding:10px 20px;border-radius:99px;z-index:999;opacity:0;transition:opacity 0.2s;pointer-events:none;}
   .success-flash.show{opacity:1;}
+  .tx-item{cursor:pointer;-webkit-tap-highlight-color:rgba(255,255,255,0.05);}
+  .tx-item:active{background:var(--bg3);}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;align-items:flex-start;justify-content:center;padding:60px 16px 16px;overflow-y:auto;}
+  .modal-overlay.visible{display:flex;}
+  .modal{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:20px;width:100%;max-width:460px;}
+  .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .modal-title{font-size:18px;font-weight:700;letter-spacing:-0.3px;}
+  .modal-close{background:none;border:none;color:var(--text2);font-size:28px;cursor:pointer;padding:0 6px;line-height:1;}
   .api-note{font-size:11px;color:var(--text3);text-align:center;margin-top:8px;}
   .port-stat{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;}
   .port-stat-label{font-size:13px;color:var(--text2);}
@@ -455,7 +463,7 @@
       <div id="manual-crypto-inputs"></div>
       <button class="btn-sm" onclick="saveManualPrices()" style="width:100%;padding:10px;margin-top:8px;background:var(--green);color:#000;border-color:var(--green);">Save manual prices</button>
     </div>
-    <p class="api-note" style="margin-top:8px;">Tries CryptoCompare → Binance → CoinGecko · auto-refreshes daily</p>
+    <p class="api-note" style="margin-top:8px;">Tries CoinGecko → Binance → CryptoCompare · auto-refreshes daily</p>
   </div>
   <div class="card">
     <div class="card-title">IBKR projection (7% annualized + €1,000/mo)</div>
@@ -544,6 +552,52 @@
 </div>
 <button class="private-toggle" id="private-toggle" onclick="togglePrivate()" title="Toggle private mode">👁</button>
 <div class="success-flash" id="flash">Saved</div>
+
+<!-- Edit Transaction Modal -->
+<div id="edit-tx-overlay" class="modal-overlay" onclick="if(event.target===this)closeEditTx()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Edit entry</div>
+      <button class="modal-close" onclick="closeEditTx()">×</button>
+    </div>
+    <div class="toggle-row">
+      <button class="toggle-btn expense" id="edit-tx-expense-btn" onclick="setEditType('expense')">Expense</button>
+      <button class="toggle-btn income" id="edit-tx-income-btn" onclick="setEditType('income')">Income</button>
+    </div>
+    <label>Amount</label>
+    <div class="amount-row">
+      <input id="edit-tx-amount" type="number" inputmode="decimal" placeholder="0.00">
+      <select id="edit-tx-cur"><option value="EUR">EUR</option><option value="AED">AED</option></select>
+    </div>
+    <label>Description</label>
+    <input id="edit-tx-desc" type="text" placeholder="Optional">
+    <div class="row">
+      <div>
+        <label>Category</label>
+        <select id="edit-tx-cat">
+          <optgroup label="Essentials"><option>Housing</option><option>Utilities</option><option>Telecom</option><option>Groceries</option><option>Transport</option><option>Health</option><option>Pet</option><option>Baby</option></optgroup>
+          <optgroup label="Lifestyle"><option>Dining Out</option><option>Travel</option><option>Entertainment</option><option>Shopping</option><option>Personal Care</option></optgroup>
+          <optgroup label="Financial"><option>IBKR</option><option>Sobha</option><option>Crypto</option><option>Savings</option></optgroup>
+          <optgroup label="Income"><option>Salary</option><option>Bonus</option><option>Side income</option><option>Refund</option></optgroup>
+          <optgroup label="One-offs"><option>Gift</option><option>Education</option><option>Other</option></optgroup>
+        </select>
+      </div>
+      <div><label>Date</label><input id="edit-tx-date" type="date"></div>
+    </div>
+    <div class="amort-row" style="margin-top:10px;">
+      <input type="checkbox" id="edit-amort-check" onchange="document.getElementById('edit-amort-extra').classList.toggle('visible',this.checked)">
+      <label for="edit-amort-check" style="margin:0;cursor:pointer;">Spread over multiple months</label>
+    </div>
+    <div id="edit-amort-extra" class="amort-extra">
+      <label>Number of months</label>
+      <input id="edit-amort-months" type="number" inputmode="numeric" min="2" max="60" placeholder="e.g. 24">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn btn-primary" style="flex:1;" onclick="saveEditTx()">Save changes</button>
+      <button class="btn btn-secondary" style="flex:1;color:var(--red);" onclick="deleteEditTx()">Delete</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ── State ──────────────────────────────────────────────────────────
@@ -998,7 +1052,28 @@ if(!localStorage.getItem('fos_tx'))localStorage.setItem('fos_tx',JSON.stringify(
 
 // ── Helpers ────────────────────────────────────────────────────────
 const S=()=>currency==='AED'?'د.إ':'€';
-const fmt=n=>{const num=Math.round(n);return S()+(num<0?'-':'')+Math.abs(num).toLocaleString();};
+const fmt=n=>{
+  const sign=n<0?'-':'';
+  const abs=Math.abs(n);
+  // Smart decimal display:
+  // - Values < 1000 with non-trivial cents: show 2 decimals
+  // - Values >= 1000 (large totals): round to whole numbers for readability
+  // - Whole numbers always show as whole
+  let str;
+  if(abs<1000&&Math.round(abs*100)%100!==0){
+    str=abs.toFixed(2);
+  } else {
+    str=Math.round(abs).toLocaleString();
+  }
+  // Add thousand separators to the integer part if not already present
+  if(!str.includes(',')&&abs>=1000){
+    str=Math.round(abs).toLocaleString();
+  } else if(str.includes('.')&&abs>=1000){
+    const [whole,dec]=str.split('.');
+    str=parseInt(whole).toLocaleString()+'.'+dec;
+  }
+  return S()+sign+str;
+};
 const fmtSigned=n=>{const num=Math.round(n);return(num>=0?'+':'-')+S()+Math.abs(num).toLocaleString();};
 const fmtPct=n=>(n>=0?'+':'')+n.toFixed(1)+'%';
 function toEUR(price,cur){
@@ -1118,6 +1193,81 @@ function logTransaction(){
   flash('Entry saved');
 }
 
+// ── Edit existing transactions ─────────────────────────────────────
+let editingTxId=null;
+let editTxType='expense';
+
+function openEditTx(id){
+  const tx=transactions.find(t=>t.id===id);
+  if(!tx)return;
+  editingTxId=id;
+  editTxType=tx.type;
+  // Populate form
+  document.getElementById('edit-tx-amount').value=tx.amountOriginal||tx.amount;
+  document.getElementById('edit-tx-cur').value=tx.currencyOriginal||'EUR';
+  document.getElementById('edit-tx-desc').value=tx.desc||'';
+  document.getElementById('edit-tx-cat').value=tx.cat;
+  document.getElementById('edit-tx-date').value=tx.date;
+  document.getElementById('edit-amort-check').checked=!!tx.amort;
+  document.getElementById('edit-amort-extra').classList.toggle('visible',!!tx.amort);
+  document.getElementById('edit-amort-months').value=tx.amort?tx.months:'';
+  // Set type toggle visual
+  document.getElementById('edit-tx-expense-btn').classList.toggle('active',tx.type==='expense');
+  document.getElementById('edit-tx-income-btn').classList.toggle('active',tx.type==='income');
+  // Show modal
+  document.getElementById('edit-tx-overlay').classList.add('visible');
+}
+
+function closeEditTx(){
+  document.getElementById('edit-tx-overlay').classList.remove('visible');
+  editingTxId=null;
+}
+
+function setEditType(t){
+  editTxType=t;
+  document.getElementById('edit-tx-expense-btn').classList.toggle('active',t==='expense');
+  document.getElementById('edit-tx-income-btn').classList.toggle('active',t==='income');
+}
+
+function saveEditTx(){
+  if(editingTxId===null)return;
+  const idx=transactions.findIndex(t=>t.id===editingTxId);
+  if(idx<0)return;
+  const amount=parseFloat(document.getElementById('edit-tx-amount').value);
+  if(!amount||amount<=0){alert('Enter a valid amount.');return;}
+  const cur=document.getElementById('edit-tx-cur').value;
+  const desc=document.getElementById('edit-tx-desc').value.trim();
+  const cat=document.getElementById('edit-tx-cat').value;
+  const date=document.getElementById('edit-tx-date').value;
+  const amort=document.getElementById('edit-amort-check').checked;
+  const months=parseInt(document.getElementById('edit-amort-months').value)||1;
+  transactions[idx]={
+    ...transactions[idx],
+    amount:toEUR(amount,cur),
+    amountOriginal:amount,
+    currencyOriginal:cur,
+    desc,cat,
+    type:editTxType,
+    date,
+    amort:amort&&months>1,
+    months:amort?months:1
+  };
+  localStorage.setItem('fos_tx',JSON.stringify(transactions));
+  closeEditTx();
+  renderOverview();
+  flash('Entry updated');
+}
+
+function deleteEditTx(){
+  if(editingTxId===null)return;
+  if(!confirm('Delete this entry? This cannot be undone.'))return;
+  transactions=transactions.filter(t=>t.id!==editingTxId);
+  localStorage.setItem('fos_tx',JSON.stringify(transactions));
+  closeEditTx();
+  renderOverview();
+  flash('Entry deleted');
+}
+
 // ── Overview ───────────────────────────────────────────────────────
 function getMonthData(month,year){
   let income=0,spent=0;const cats={};
@@ -1198,7 +1348,7 @@ function renderOverview(){
     const dispAmt=tx.amort?tx.amount/tx.months:tx.amount;
     const spread=tx.amort?`<span class="pill spread">/${tx.months}mo</span>`:'';
     const origCur=tx.currencyOriginal&&tx.currencyOriginal!=='EUR'?` <span class="pill" style="font-size:9px;">${tx.currencyOriginal} ${tx.amountOriginal.toFixed(0)}</span>`:'';
-    return`<div class="tx-item"><div class="tx-top"><div class="tx-name">${tx.cat}${spread}</div><div class="tx-amount ${tx.type==='income'?'green':'red'}">${tx.type==='income'?'+':'-'}${fmt(dispAmt)}</div></div>${tx.desc?`<div class="tx-desc">${tx.desc}</div>`:''}<div style="margin-top:3px"><div class="tx-meta">${dateStr}${origCur}</div></div></div>`;
+    return`<div class="tx-item" onclick="openEditTx(${tx.id})"><div class="tx-top"><div class="tx-name">${tx.cat}${spread}</div><div class="tx-amount ${tx.type==='income'?'green':'red'}">${tx.type==='income'?'+':'-'}${fmt(dispAmt)}</div></div>${tx.desc?`<div class="tx-desc">${tx.desc}</div>`:''}<div style="margin-top:3px"><div class="tx-meta">${dateStr}${origCur}</div></div></div>`;
   }).join('')||'<div class="empty">Nothing logged this month</div>';
 }
 
@@ -1642,9 +1792,11 @@ async function refreshCryptoPrices(){
   const statusEl=document.getElementById('crypto-updated');
   if(statusEl)statusEl.textContent='Fetching live prices...';
   const attempts=[
-    {name:'CryptoCompare',fn:fetchCryptoCompare},
+    // CoinGecko first because it uses unambiguous coin IDs (e.g. 'mantle' specifically = Mantle Network).
+    // CryptoCompare and Binance use ticker symbols which can collide between different tokens.
+    {name:'CoinGecko',fn:fetchCoinGecko},
     {name:'Binance',fn:fetchBinance},
-    {name:'CoinGecko',fn:fetchCoinGecko}
+    {name:'CryptoCompare',fn:fetchCryptoCompare}
   ];
   const errors=[];
   let prices=null,source=null;
