@@ -494,11 +494,18 @@
       <input type="range" min="0" max="2000000" step="1000" value="129000" id="sl-assets" oninput="syncInput('sl-assets','sl-assets-val');updateFreedom()">
     </div>
     <div class="slider-block">
-      <div class="slider-header"><span class="slider-label">Expected annual return (%)</span><input class="slider-input" id="sl-rate-val" type="number" inputmode="decimal" value="7" step="0.5" oninput="syncSlider('sl-rate','sl-rate-val');updateFreedom()"></div>
+      <div class="slider-header"><span class="slider-label">Expected annual return (%, nominal)</span><input class="slider-input" id="sl-rate-val" type="number" inputmode="decimal" value="7" step="0.5" oninput="syncSlider('sl-rate','sl-rate-val');updateFreedom()"></div>
       <input type="range" min="1" max="15" step="0.5" value="7" id="sl-rate" oninput="syncInput('sl-rate','sl-rate-val');updateFreedom()">
     </div>
+    <div class="slider-block">
+      <div class="slider-header"><span class="slider-label">Annual inflation (%)</span><input class="slider-input" id="sl-infl-val" type="number" inputmode="decimal" value="2.8" step="0.1" oninput="syncSlider('sl-infl','sl-infl-val');updateFreedom()"></div>
+      <input type="range" min="0" max="6" step="0.1" value="2.8" id="sl-infl" oninput="syncInput('sl-infl','sl-infl-val');updateFreedom()">
+    </div>
   </div>
-  <div class="card"><div class="card-title">Year by year projection</div><div id="freedom-proj"></div></div>
+  <div class="card"><div class="card-title">Year by year projection</div>
+    <p class="api-note" style="margin-bottom:10px;">All values in today's purchasing power. Real return = nominal − inflation. Your €5,000/month target stays meaningful regardless of when you retire.</p>
+    <div id="freedom-proj"></div>
+  </div>
 </div>
 
 <!-- MORE TAB -->
@@ -2032,14 +2039,21 @@ function updateFreedom(){
   const invest=parseFloat(document.getElementById('sl-invest-val').value)||1000;
   const age=parseFloat(document.getElementById('sl-age-val').value)||33;
   const assets=parseFloat(document.getElementById('sl-assets-val').value)||0;
-  const rate=(parseFloat(document.getElementById('sl-rate-val').value)||7)/100;
+  const nominal=(parseFloat(document.getElementById('sl-rate-val').value)||7)/100;
+  const inflEl=document.getElementById('sl-infl-val');
+  const inflation=(inflEl?parseFloat(inflEl.value):2.8)/100;
+  // Real return = (1 + nominal) / (1 + inflation) - 1
+  // Using this means everything below is in today's purchasing power
+  const rate=(1+nominal)/(1+inflation)-1;
   const target=income*12*25;
   let portfolio=assets,years=0;
   while(portfolio<target&&years<60){portfolio=portfolio*(1+rate)+invest*12;years++;}
   const retireYear=new Date().getFullYear()+years,retireAge=age+years;
   document.getElementById('ret-year').textContent=years<60?retireYear:'60+';
   document.getElementById('ret-age-result').textContent='Age '+retireAge+' · in '+years+' years';
-  document.getElementById('ret-target').textContent='Target: '+fmt(target)+' ('+fmt(income)+'/mo × 25)';
+  // Show both real target and equivalent future nominal so user sees inflation impact
+  const futureNominal=income*Math.pow(1+inflation,years);
+  document.getElementById('ret-target').textContent='Target: '+fmt(target)+' ('+fmt(income)+'/mo today · ~'+fmt(futureNominal)+'/mo nominal at year '+years+')';
   const checks=[5,10,15,20,25,years].filter((v,i,a)=>a.indexOf(v)===i&&v<=55).sort((a,b)=>a-b);
   let p=assets,prev=0;
   document.getElementById('freedom-proj').innerHTML=checks.map(y=>{
