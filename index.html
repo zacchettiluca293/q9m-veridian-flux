@@ -94,7 +94,16 @@
   .divider{height:0.5px;background:var(--border);margin:16px 0;}
   .success-flash{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;font-size:13px;font-weight:600;padding:10px 20px;border-radius:99px;z-index:999;opacity:0;transition:opacity 0.2s;pointer-events:none;}
   .success-flash.show{opacity:1;}
-  .tx-item{cursor:pointer;-webkit-tap-highlight-color:rgba(255,255,255,0.05);}
+  .tx-item{cursor:pointer;-webkit-tap-highlight-color:rgba(255,255,255,0.05);padding:12px 14px;border-radius:var(--radius-sm);transition:background 0.1s;}
+  .tx-item:active{background:var(--bg3);}
+  .day-group{margin-bottom:18px;}
+  .day-header{display:flex;justify-content:space-between;align-items:baseline;padding:6px 4px 8px;border-bottom:0.5px solid var(--border);margin-bottom:6px;}
+  .day-label{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-0.2px;}
+  .day-total{font-size:13px;font-weight:500;color:var(--text2);}
+  .day-total.green{color:var(--green);}
+  .day-total.red{color:var(--text2);}
+  .day-txs .tx-item{padding:10px 12px;}
+  .day-txs .tx-item + .tx-item{border-top:0.5px solid var(--border);}
   .tx-item:active{background:var(--bg3);}
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;align-items:flex-start;justify-content:center;padding:60px 16px 16px;overflow-y:auto;}
   .modal-overlay.visible{display:flex;}
@@ -476,25 +485,24 @@
 <div id="screen-freedom" class="screen">
   <div class="screen-header"><div class="screen-title">Freedom</div><div class="screen-sub">When can you stop working?</div></div>
   <div class="card"><div class="retire-hero"><div class="retire-year" id="ret-year">—</div><div class="retire-age" id="ret-age-result"></div><div class="retire-target" id="ret-target"></div></div></div>
+
+  <!-- Assumptions -->
   <div class="card">
+    <div class="card-title">Assumptions</div>
     <div class="slider-block">
-      <div class="slider-header"><span class="slider-label">Monthly income in retirement (€)</span><input class="slider-input" id="sl-income-val" type="number" inputmode="decimal" value="5000" oninput="syncSlider('sl-income','sl-income-val');updateFreedom()"></div>
-      <input type="range" min="1000" max="50000" step="500" value="5000" id="sl-income" oninput="syncInput('sl-income','sl-income-val');updateFreedom()">
-    </div>
-    <div class="slider-block">
-      <div class="slider-header"><span class="slider-label">Monthly investment (€)</span><input class="slider-input" id="sl-invest-val" type="number" inputmode="decimal" value="1000" oninput="syncSlider('sl-invest','sl-invest-val');updateFreedom()"></div>
-      <input type="range" min="100" max="20000" step="50" value="1000" id="sl-invest" oninput="syncInput('sl-invest','sl-invest-val');updateFreedom()">
+      <div class="slider-header"><span class="slider-label">Retirement income target (€/mo, today's money)</span><input class="slider-input" id="sl-income-val" type="number" inputmode="decimal" value="5000" oninput="syncSlider('sl-income','sl-income-val');updateFreedom()"></div>
+      <input type="range" min="1000" max="20000" step="500" value="5000" id="sl-income" oninput="syncInput('sl-income','sl-income-val');updateFreedom()">
     </div>
     <div class="slider-block">
       <div class="slider-header"><span class="slider-label">Your age today</span><input class="slider-input" id="sl-age-val" type="number" inputmode="numeric" value="33" oninput="syncSlider('sl-age','sl-age-val');updateFreedom()"></div>
       <input type="range" min="20" max="65" step="1" value="33" id="sl-age" oninput="syncInput('sl-age','sl-age-val');updateFreedom()">
     </div>
     <div class="slider-block">
-      <div class="slider-header"><span class="slider-label">Current investable assets (€)</span><input class="slider-input" id="sl-assets-val" type="number" inputmode="decimal" value="129000" oninput="syncSlider('sl-assets','sl-assets-val');updateFreedom()"></div>
+      <div class="slider-header"><span class="slider-label">Current IBKR portfolio (€)</span><input class="slider-input" id="sl-assets-val" type="number" inputmode="decimal" value="129000" oninput="syncSlider('sl-assets','sl-assets-val');updateFreedom()"></div>
       <input type="range" min="0" max="2000000" step="1000" value="129000" id="sl-assets" oninput="syncInput('sl-assets','sl-assets-val');updateFreedom()">
     </div>
     <div class="slider-block">
-      <div class="slider-header"><span class="slider-label">Expected annual return (%, nominal)</span><input class="slider-input" id="sl-rate-val" type="number" inputmode="decimal" value="7" step="0.5" oninput="syncSlider('sl-rate','sl-rate-val');updateFreedom()"></div>
+      <div class="slider-header"><span class="slider-label">Expected return (%, nominal)</span><input class="slider-input" id="sl-rate-val" type="number" inputmode="decimal" value="7" step="0.5" oninput="syncSlider('sl-rate','sl-rate-val');updateFreedom()"></div>
       <input type="range" min="1" max="15" step="0.5" value="7" id="sl-rate" oninput="syncInput('sl-rate','sl-rate-val');updateFreedom()">
     </div>
     <div class="slider-block">
@@ -502,8 +510,63 @@
       <input type="range" min="0" max="6" step="0.1" value="2.8" id="sl-infl" oninput="syncInput('sl-infl','sl-infl-val');updateFreedom()">
     </div>
   </div>
-  <div class="card"><div class="card-title">Year by year projection</div>
-    <p class="api-note" style="margin-bottom:10px;">All values in today's purchasing power. Real return = nominal − inflation. Your €5,000/month target stays meaningful regardless of when you retire.</p>
+
+  <!-- Phase 1: Berlin -->
+  <div class="card">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>📍 Phase 1 — Berlin</span>
+      <span class="pill" style="background:rgba(59,130,246,0.15);color:var(--blue);" id="ph1-end-label">→ age 34</span>
+    </div>
+    <div class="slider-block">
+      <div class="slider-header"><span class="slider-label">Duration (years)</span><input class="slider-input" id="ph1-years-val" type="number" inputmode="numeric" value="1" min="0" max="10" oninput="syncSlider('ph1-years','ph1-years-val');updateFreedom()"></div>
+      <input type="range" min="0" max="10" step="1" value="1" id="ph1-years" oninput="syncInput('ph1-years','ph1-years-val');updateFreedom()">
+    </div>
+    <div class="slider-block">
+      <div class="slider-header"><span class="slider-label">Monthly investment (€)</span><input class="slider-input" id="ph1-invest-val" type="number" inputmode="decimal" value="1000" oninput="syncSlider('ph1-invest','ph1-invest-val');updateFreedom()"></div>
+      <input type="range" min="0" max="10000" step="100" value="1000" id="ph1-invest" oninput="syncInput('ph1-invest','ph1-invest-val');updateFreedom()">
+    </div>
+    <div class="proj-row" style="margin-top:8px;"><div style="color:var(--text2);font-size:13px;">Portfolio at end of Berlin</div><div class="proj-val" id="ph1-end-val">—</div></div>
+  </div>
+
+  <!-- Phase 2: Dubai -->
+  <div class="card">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>🇦🇪 Phase 2 — Dubai</span>
+      <span class="pill" style="background:rgba(245,158,11,0.15);color:var(--amber);" id="ph2-end-label">→ age 39</span>
+    </div>
+    <div class="slider-block">
+      <div class="slider-header"><span class="slider-label">Duration (years)</span><input class="slider-input" id="ph2-years-val" type="number" inputmode="numeric" value="5" min="0" max="15" oninput="syncSlider('ph2-years','ph2-years-val');updateFreedom()"></div>
+      <input type="range" min="0" max="15" step="1" value="5" id="ph2-years" oninput="syncInput('ph2-years','ph2-years-val');updateFreedom()">
+    </div>
+    <div class="slider-block">
+      <div class="slider-header"><span class="slider-label">Monthly investment (€)</span><input class="slider-input" id="ph2-invest-val" type="number" inputmode="decimal" value="4000" oninput="syncSlider('ph2-invest','ph2-invest-val');updateFreedom()"></div>
+      <input type="range" min="0" max="15000" step="100" value="4000" id="ph2-invest" oninput="syncInput('ph2-invest','ph2-invest-val');updateFreedom()">
+    </div>
+    <div class="amort-row" style="margin:10px 0 6px;">
+      <input type="checkbox" id="ph2-flat-check" onchange="updateFreedom()">
+      <label for="ph2-flat-check" style="margin:0;cursor:pointer;font-size:14px;">Reinvest Dubai flat equity at exit</label>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px;margin-left:26px;">Adds ~€166K to portfolio when leaving Dubai</div>
+    <div class="proj-row"><div style="color:var(--text2);font-size:13px;">Portfolio arriving in Southern Europe</div><div class="proj-val" id="ph2-end-val">—</div></div>
+  </div>
+
+  <!-- Phase 3: Southern Europe -->
+  <div class="card">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>🇮🇹 Phase 3 — Southern Europe</span>
+      <span class="pill" style="background:rgba(29,185,84,0.15);color:var(--green);" id="ph3-fi-label">FI at —</span>
+    </div>
+    <div class="slider-block">
+      <div class="slider-header"><span class="slider-label">Monthly investment (€)</span><input class="slider-input" id="ph3-invest-val" type="number" inputmode="decimal" value="2000" oninput="syncSlider('ph3-invest','ph3-invest-val');updateFreedom()"></div>
+      <input type="range" min="0" max="10000" step="100" value="2000" id="ph3-invest" oninput="syncInput('ph3-invest','ph3-invest-val');updateFreedom()">
+    </div>
+    <div class="proj-row" style="margin-top:8px;"><div style="color:var(--text2);font-size:13px;">Years investing in Southern Europe</div><div class="proj-val" id="ph3-years-val">—</div></div>
+  </div>
+
+  <!-- Projection -->
+  <div class="card">
+    <div class="card-title">Full trajectory</div>
+    <p class="api-note" style="margin-bottom:12px;">All values in today's purchasing power (real return = nominal − inflation).</p>
     <div id="freedom-proj"></div>
   </div>
 </div>
@@ -1350,12 +1413,46 @@ function renderOverview(){
     if(a.type!==b.type)return a.type==='income'?-1:1;
     return 0;
   });
-  document.getElementById('tx-list').innerHTML=monthTx.map(tx=>{
-    const d=new Date(tx.date),dateStr=d.toLocaleDateString('default',{day:'numeric',month:'short'});
+  // Group transactions by date for Revolut-style daily sections
+  const today=new Date();today.setHours(0,0,0,0);
+  const yesterday=new Date(today);yesterday.setDate(yesterday.getDate()-1);
+  function dayLabel(dateStr){
+    const d=new Date(dateStr);d.setHours(0,0,0,0);
+    if(d.getTime()===today.getTime())return 'Today';
+    if(d.getTime()===yesterday.getTime())return 'Yesterday';
+    return d.toLocaleDateString('default',{day:'numeric',month:'long'});
+  }
+  const groups={};
+  monthTx.forEach(tx=>{
+    const key=tx.date;
+    if(!groups[key])groups[key]={label:dayLabel(tx.date),txs:[],netEUR:0};
+    groups[key].txs.push(tx);
     const dispAmt=tx.amort?tx.amount/tx.months:tx.amount;
-    const spread=tx.amort?`<span class="pill spread">/${tx.months}mo</span>`:'';
-    const origCur=tx.currencyOriginal&&tx.currencyOriginal!=='EUR'?` <span class="pill" style="font-size:9px;">${tx.currencyOriginal} ${tx.amountOriginal.toFixed(0)}</span>`:'';
-    return`<div class="tx-item" onclick="openEditTx(${tx.id})"><div class="tx-top"><div class="tx-name">${tx.cat}${spread}</div><div class="tx-amount ${tx.type==='income'?'green':'red'}">${tx.type==='income'?'+':'-'}${fmt(dispAmt)}</div></div>${tx.desc?`<div class="tx-desc">${tx.desc}</div>`:''}<div style="margin-top:3px"><div class="tx-meta">${dateStr}${origCur}</div></div></div>`;
+    groups[key].netEUR+=(tx.type==='income'?1:-1)*dispAmt;
+  });
+  const sortedKeys=Object.keys(groups).sort((a,b)=>b.localeCompare(a));
+  document.getElementById('tx-list').innerHTML=sortedKeys.map(key=>{
+    const g=groups[key];
+    const dayTotal=g.netEUR;
+    const dayTotalClass=dayTotal>=0?'green':'red';
+    const dayTotalStr=(dayTotal>=0?'+':'-')+fmt(Math.abs(dayTotal)).replace(/^[€]/,'€');
+    const rows=g.txs.map(tx=>{
+      const dispAmt=tx.amort?tx.amount/tx.months:tx.amount;
+      const spread=tx.amort?`<span class="pill spread">/${tx.months}mo</span>`:'';
+      const origCur=tx.currencyOriginal&&tx.currencyOriginal!=='EUR'?` <span class="pill" style="font-size:9px;">${tx.currencyOriginal} ${tx.amountOriginal.toFixed(0)}</span>`:'';
+      return`<div class="tx-item" onclick="openEditTx(${tx.id})">
+        <div class="tx-top"><div class="tx-name">${tx.cat}${spread}</div><div class="tx-amount ${tx.type==='income'?'green':'red'}">${tx.type==='income'?'+':'-'}${fmt(dispAmt)}</div></div>
+        ${tx.desc?`<div class="tx-desc">${tx.desc}</div>`:''}
+        ${origCur?`<div style="margin-top:3px"><div class="tx-meta">${origCur}</div></div>`:''}
+      </div>`;
+    }).join('');
+    return`<div class="day-group">
+      <div class="day-header">
+        <div class="day-label">${g.label}</div>
+        <div class="day-total ${dayTotalClass}">${dayTotalStr}</div>
+      </div>
+      <div class="day-txs">${rows}</div>
+    </div>`;
   }).join('')||'<div class="empty">Nothing logged this month</div>';
 }
 
@@ -2036,31 +2133,97 @@ function syncSlider(sliderId,inputId){
 }
 function updateFreedom(){
   const income=parseFloat(document.getElementById('sl-income-val').value)||5000;
-  const invest=parseFloat(document.getElementById('sl-invest-val').value)||1000;
   const age=parseFloat(document.getElementById('sl-age-val').value)||33;
   const assets=parseFloat(document.getElementById('sl-assets-val').value)||0;
   const nominal=(parseFloat(document.getElementById('sl-rate-val').value)||7)/100;
   const inflEl=document.getElementById('sl-infl-val');
   const inflation=(inflEl?parseFloat(inflEl.value):2.8)/100;
-  // Real return = (1 + nominal) / (1 + inflation) - 1
-  // Using this means everything below is in today's purchasing power
-  const rate=(1+nominal)/(1+inflation)-1;
-  const target=income*12*25;
-  let portfolio=assets,years=0;
-  while(portfolio<target&&years<60){portfolio=portfolio*(1+rate)+invest*12;years++;}
-  const retireYear=new Date().getFullYear()+years,retireAge=age+years;
-  document.getElementById('ret-year').textContent=years<60?retireYear:'60+';
-  document.getElementById('ret-age-result').textContent='Age '+retireAge+' · in '+years+' years';
-  // Show both real target and equivalent future nominal so user sees inflation impact
-  const futureNominal=income*Math.pow(1+inflation,years);
-  document.getElementById('ret-target').textContent='Target: '+fmt(target)+' ('+fmt(income)+'/mo today · ~'+fmt(futureNominal)+'/mo nominal at year '+years+')';
-  const checks=[5,10,15,20,25,years].filter((v,i,a)=>a.indexOf(v)===i&&v<=55).sort((a,b)=>a-b);
-  let p=assets,prev=0;
-  document.getElementById('freedom-proj').innerHTML=checks.map(y=>{
-    for(let i=prev;i<y;i++)p=p*(1+rate)+invest*12;prev=y;
-    const pct=Math.min(100,Math.round((p/target)*100));
-    return`<div class="proj-row"><div class="proj-year">Year ${y} · Age ${age+y} (${new Date().getFullYear()+y})</div><div class="proj-val ${pct>=100?'green':''}">${fmt(p)} · ${pct}%</div></div>`;
-  }).join('');
+  const realReturn=(1+nominal)/(1+inflation)-1;
+  const target=income*12*25; // 25x annual income = FI threshold
+
+  // Phase inputs
+  const ph1Years=parseInt(document.getElementById('ph1-years-val').value)||0;
+  const ph1Invest=parseFloat(document.getElementById('ph1-invest-val').value)||0;
+  const ph2Years=parseInt(document.getElementById('ph2-years-val').value)||0;
+  const ph2Invest=parseFloat(document.getElementById('ph2-invest-val').value)||0;
+  const ph2Flat=document.getElementById('ph2-flat-check').checked;
+  const ph3Invest=parseFloat(document.getElementById('ph3-invest-val').value)||0;
+  const FLAT_VALUE=166000;
+
+  // Simulate phase by phase
+  let p=assets,totalYears=0;
+
+  // Phase 1: Berlin
+  for(let i=0;i<ph1Years;i++){p=p*(1+realReturn)+ph1Invest*12;totalYears++;}
+  const ph1EndPortfolio=Math.round(p);
+  const ph1EndAge=age+totalYears;
+
+  // Phase 2: Dubai — add flat equity at start of phase 2 exit if toggled
+  for(let i=0;i<ph2Years;i++){p=p*(1+realReturn)+ph2Invest*12;totalYears++;}
+  if(ph2Flat)p+=FLAT_VALUE;
+  const ph2EndPortfolio=Math.round(p);
+  const ph2EndAge=age+totalYears;
+
+  // Phase 3: Southern Europe — invest until FI
+  const ph3StartAge=ph2EndAge;
+  let ph3Years=0;
+  while(p<target&&ph3Years<60){p=p*(1+realReturn)+ph3Invest*12;ph3Years++;totalYears++;}
+  const fiAge=age+totalYears;
+  const fiYear=new Date().getFullYear()+totalYears;
+
+  // Update hero
+  document.getElementById('ret-year').textContent=totalYears<60?fiYear:'60+';
+  document.getElementById('ret-age-result').textContent='Age '+fiAge+' · in '+totalYears+' years';
+  const futureNominal=income*Math.pow(1+inflation,totalYears);
+  document.getElementById('ret-target').textContent=
+    'Target: '+fmt(target)+' ('+fmt(income)+'/mo today · ~'+fmt(futureNominal)+'/mo nominal at FI)';
+
+  // Update phase labels
+  document.getElementById('ph1-end-label').textContent='→ age '+ph1EndAge;
+  document.getElementById('ph2-end-label').textContent='→ age '+ph2EndAge;
+  document.getElementById('ph3-fi-label').textContent='FI at age '+fiAge;
+
+  // Update phase summaries
+  document.getElementById('ph1-end-val').textContent=fmt(ph1EndPortfolio);
+  document.getElementById('ph2-end-val').textContent=fmt(ph2EndPortfolio)+(ph2Flat?' (incl. flat +'+fmt(FLAT_VALUE)+')':'');
+  document.getElementById('ph3-years-val').textContent=ph3Years+' years (age '+ph3StartAge+' → '+fiAge+')';
+
+  // Full trajectory rows
+  const milestoneAges=[ph1EndAge,ph2EndAge].filter(a=>a>age);
+  // Also show every 5 years and the FI point
+  const allYears=new Set();
+  for(let y=5;y<=totalYears+5;y+=5)allYears.add(y);
+  allYears.add(totalYears);
+  const sortedYears=[...allYears].sort((a,b)=>a-b).filter(y=>y>0&&y<=totalYears+1);
+
+  let simP=assets,simY=0;
+  const rows=[];
+  for(const y of sortedYears){
+    while(simY<y&&simY<totalYears){
+      // Determine which phase and invest rate
+      let inv=0;
+      if(simY<ph1Years)inv=ph1Invest;
+      else if(simY<ph1Years+ph2Years)inv=ph2Invest;
+      else inv=ph3Invest;
+      simP=simP*(1+realReturn)+inv*12;
+      simY++;
+      // Apply flat bonus at exact end of phase 2
+      if(ph2Flat&&simY===ph1Years+ph2Years)simP+=FLAT_VALUE;
+    }
+    const pct=Math.min(100,Math.round((simP/target)*100));
+    const isPhase1End=y===ph1Years;
+    const isPhase2End=y===ph1Years+ph2Years;
+    const isFI=y===totalYears;
+    let label='Year '+y+' · Age '+(age+y)+' ('+( new Date().getFullYear()+y)+')';
+    if(isPhase1End)label+=' 📍 Leave Berlin';
+    if(isPhase2End)label+=' 🇦🇪 Leave Dubai';
+    if(isFI)label+=' 🎯 FI';
+    rows.push(`<div class="proj-row" style="${isFI?'border-top:1px solid var(--green);padding-top:10px;margin-top:4px;':''}">
+      <div class="proj-year" style="${isFI?'color:var(--green);font-weight:600;':''}">${label}</div>
+      <div class="proj-val ${pct>=100?'green':''}">${fmt(simP)} · ${pct}%</div>
+    </div>`);
+  }
+  document.getElementById('freedom-proj').innerHTML=rows.join('');
 }
 
 // ── Insight ────────────────────────────────────────────────────────
@@ -2123,7 +2286,6 @@ function showScreen(id,btn){
   if(id==='overview')renderOverview();
   if(id==='wealth')renderWealth();
   if(id==='freedom'){
-    // Auto-sync investable assets to IBKR portfolio value only (excludes crypto - speculative; excludes cash - not invested)
     if(wealth.broker>0){
       document.getElementById('sl-assets-val').value=Math.round(wealth.broker);
       document.getElementById('sl-assets').value=Math.min(Math.round(wealth.broker),2000000);
