@@ -27,7 +27,7 @@
   .screen-title{font-size:28px;font-weight:700;letter-spacing:-0.5px;}
   .screen-sub{font-size:13px;color:var(--text2);margin-top:2px;}
   .card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
-  .card-title{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;}
+  .card-title{font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;font-weight:600;}
   .metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
   .metric{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:14px;}
   .metric-label{font-size:11px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;}
@@ -102,6 +102,28 @@
   .success-flash{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;font-size:13px;font-weight:600;padding:10px 20px;border-radius:99px;z-index:999;opacity:0;transition:opacity 0.2s;pointer-events:none;}
   .success-flash.show{opacity:1;}
   .tx-item{cursor:pointer;-webkit-tap-highlight-color:rgba(255,255,255,0.05);padding:12px 14px;border-radius:var(--radius-sm);transition:background 0.1s;}
+  /* iOS-style toggle switch */
+  .toggle-line{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:0.5px solid var(--border);margin-top:6px;}
+  .toggle-line:first-child{border-top:none;margin-top:0;}
+  .toggle-title{font-size:14px;font-weight:500;color:var(--text);}
+  .toggle-sub{font-size:12px;color:var(--text3);margin-top:2px;}
+  .switch{position:relative;display:inline-block;width:52px;height:32px;flex-shrink:0;margin-left:12px;}
+  .switch input{opacity:0;width:0;height:0;}
+  .switch-slider{position:absolute;cursor:pointer;inset:0;background:var(--bg3);border-radius:32px;transition:.25s;}
+  .switch-slider:before{position:absolute;content:"";height:28px;width:28px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.25s;box-shadow:0 2px 4px rgba(0,0,0,0.3);}
+  .switch input:checked + .switch-slider{background:var(--green);}
+  .switch input:checked + .switch-slider:before{transform:translateX(20px);}
+  /* Phase row in multi-country mode */
+  .phase-row{background:var(--bg3);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;}
+  .phase-row-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;}
+  .phase-country-select{flex:1;background:var(--bg2);border:0.5px solid var(--border);color:var(--text);padding:8px 10px;border-radius:8px;font-size:14px;margin:0;}
+  .phase-remove{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;}
+  .phase-remove:hover{color:var(--red);}
+  .phase-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+  .phase-grid label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;display:block;}
+  .phase-grid input,.phase-grid select{width:100%;background:var(--bg2);border:0.5px solid var(--border);color:var(--text);padding:8px 10px;border-radius:8px;font-size:14px;margin:0;}
+  .phase-summary{font-size:12px;color:var(--text3);margin-top:6px;padding-top:8px;border-top:0.5px solid var(--border);}
+  .phase-pill{display:inline-block;background:rgba(29,185,84,0.12);color:var(--green);padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;margin-left:6px;}
   .tx-item:active{background:var(--bg3);}
   .day-group{margin-bottom:24px;}
   .day-header{display:flex;justify-content:space-between;align-items:baseline;padding:16px 4px 12px;border-bottom:0.5px solid var(--border);margin-bottom:10px;}
@@ -178,7 +200,7 @@
   .flat-stat-val{font-size:14px;font-weight:600;}
   .delete-x{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1;}
   .delete-x:hover{color:var(--red);}
-  .private-toggle{position:fixed;top:24px;right:16px;z-index:200;background:var(--bg2);border:0.5px solid var(--border2);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--text2);}
+  .private-toggle{position:fixed;top:calc(env(safe-area-inset-top,12px) + 12px);right:16px;z-index:200;background:var(--bg2);border:0.5px solid var(--border2);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--text2);box-shadow:0 2px 8px rgba(0,0,0,0.25);}
   .private-toggle:active{background:var(--bg3);}
   /* Lock screen */
   .lock-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
@@ -512,73 +534,48 @@
       <div class="slider-header"><span class="slider-label">Expected return (%, nominal)</span><input class="slider-input" id="sl-rate-val" type="number" inputmode="decimal" value="7" step="0.5" oninput="syncSlider('sl-rate','sl-rate-val');updateFreedom()"></div>
       <input type="range" min="1" max="15" step="0.5" value="7" id="sl-rate" oninput="syncInput('sl-rate','sl-rate-val');updateFreedom()">
     </div>
-    <div class="amort-row" style="margin:10px 0 6px;">
-      <input type="checkbox" id="sl-infl-on" onchange="updateFreedom()">
-      <label for="sl-infl-on" style="margin:0;cursor:pointer;font-size:14px;">Account for inflation</label>
+    <!-- Inflation as iOS-style toggle -->
+    <div class="toggle-line">
+      <div>
+        <div class="toggle-title">Account for inflation</div>
+        <div class="toggle-sub">Keeps target in today's purchasing power.</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="sl-infl-on" onchange="updateFreedom()"><span class="switch-slider"></span></label>
     </div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:10px;margin-left:26px;">When on, values stay in today's purchasing power. We can discuss this together.</div>
     <div class="slider-block" id="infl-block" style="display:none;">
       <div class="slider-header"><span class="slider-label">Annual inflation (%)</span><input class="slider-input" id="sl-infl-val" type="number" inputmode="decimal" value="2.8" step="0.1" oninput="syncSlider('sl-infl','sl-infl-val');updateFreedom()"></div>
       <input type="range" min="0" max="6" step="0.1" value="2.8" id="sl-infl" oninput="syncInput('sl-infl','sl-infl-val');updateFreedom()">
     </div>
   </div>
 
-  <!-- Phase 1: Berlin -->
-  <div class="card">
-    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
-      <span>📍 Phase 1 — Berlin</span>
-      <span class="pill" style="background:rgba(59,130,246,0.15);color:var(--blue);" id="ph1-end-label">→ age 34</span>
-    </div>
+  <!-- SIMPLE MODE: just monthly investment -->
+  <div class="card" id="simple-mode-card">
+    <div class="card-title">Investment plan</div>
     <div class="slider-block">
-      <div class="slider-header"><span class="slider-label">Duration (years)</span><input class="slider-input" id="ph1-years-val" type="number" inputmode="numeric" value="1" min="0" max="10" oninput="syncSlider('ph1-years','ph1-years-val');updateFreedom()"></div>
-      <input type="range" min="0" max="10" step="1" value="1" id="ph1-years" oninput="syncInput('ph1-years','ph1-years-val');updateFreedom()">
+      <div class="slider-header"><span class="slider-label">Monthly investment (€)</span><input class="slider-input" id="simple-invest-val" type="number" inputmode="decimal" value="1000" oninput="syncSlider('simple-invest','simple-invest-val');updateFreedom()"></div>
+      <input type="range" min="0" max="15000" step="100" value="1000" id="simple-invest" oninput="syncInput('simple-invest','simple-invest-val');updateFreedom()">
     </div>
-    <div class="slider-block">
-      <div class="slider-header"><span class="slider-label">Monthly investment (€)</span><input class="slider-input" id="ph1-invest-val" type="number" inputmode="decimal" value="1000" oninput="syncSlider('ph1-invest','ph1-invest-val');updateFreedom()"></div>
-      <input type="range" min="0" max="10000" step="100" value="1000" id="ph1-invest" oninput="syncInput('ph1-invest','ph1-invest-val');updateFreedom()">
+    <!-- Multi-country toggle -->
+    <div class="toggle-line" style="margin-top:14px;">
+      <div>
+        <div class="toggle-title">Multi-country plan</div>
+        <div class="toggle-sub">Different investment amount per country/period.</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="multi-on" onchange="toggleMultiCountry()"><span class="switch-slider"></span></label>
     </div>
-    <div class="proj-row" style="margin-top:8px;"><div style="color:var(--text2);font-size:13px;">Portfolio at end of Berlin</div><div class="proj-val" id="ph1-end-val">—</div></div>
   </div>
 
-  <!-- Phase 2: Dubai -->
-  <div class="card">
-    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
-      <span>🇦🇪 Phase 2 — Dubai</span>
-      <span class="pill" style="background:rgba(245,158,11,0.15);color:var(--amber);" id="ph2-end-label">→ age 39</span>
-    </div>
-    <div class="slider-block">
-      <div class="slider-header"><span class="slider-label">Duration (years)</span><input class="slider-input" id="ph2-years-val" type="number" inputmode="numeric" value="5" min="0" max="15" oninput="syncSlider('ph2-years','ph2-years-val');updateFreedom()"></div>
-      <input type="range" min="0" max="15" step="1" value="5" id="ph2-years" oninput="syncInput('ph2-years','ph2-years-val');updateFreedom()">
-    </div>
-    <div class="slider-block">
-      <div class="slider-header"><span class="slider-label">Monthly investment (€)</span><input class="slider-input" id="ph2-invest-val" type="number" inputmode="decimal" value="4000" oninput="syncSlider('ph2-invest','ph2-invest-val');updateFreedom()"></div>
-      <input type="range" min="0" max="15000" step="100" value="4000" id="ph2-invest" oninput="syncInput('ph2-invest','ph2-invest-val');updateFreedom()">
-    </div>
-    <div class="amort-row" style="margin:10px 0 6px;">
-      <input type="checkbox" id="ph2-flat-check" onchange="updateFreedom()">
-      <label for="ph2-flat-check" style="margin:0;cursor:pointer;font-size:14px;">Reinvest Dubai flat equity at exit</label>
-    </div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:10px;margin-left:26px;">Adds ~€166K to portfolio when leaving Dubai</div>
-    <div class="proj-row"><div style="color:var(--text2);font-size:13px;">Portfolio arriving in Southern Europe</div><div class="proj-val" id="ph2-end-val">—</div></div>
-  </div>
-
-  <!-- Phase 3: Southern Europe -->
-  <div class="card">
-    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
-      <span>🇮🇹 Phase 3 — Southern Europe</span>
-      <span class="pill" style="background:rgba(29,185,84,0.15);color:var(--green);" id="ph3-fi-label">FI at —</span>
-    </div>
-    <div class="slider-block">
-      <div class="slider-header"><span class="slider-label">Monthly investment (€)</span><input class="slider-input" id="ph3-invest-val" type="number" inputmode="decimal" value="2000" oninput="syncSlider('ph3-invest','ph3-invest-val');updateFreedom()"></div>
-      <input type="range" min="0" max="10000" step="100" value="2000" id="ph3-invest" oninput="syncInput('ph3-invest','ph3-invest-val');updateFreedom()">
-    </div>
-    <div class="proj-row" style="margin-top:8px;"><div style="color:var(--text2);font-size:13px;">Years investing in Southern Europe</div><div class="proj-val" id="ph3-years-val">—</div></div>
+  <!-- MULTI-COUNTRY MODE: phases list -->
+  <div class="card" id="multi-mode-card" style="display:none;">
+    <div class="card-title">Phases</div>
+    <p class="api-note" style="margin-bottom:14px;">Add a row for each country/period. Phases auto-sort by start year. Last phase can run until retirement.</p>
+    <div id="phases-list"></div>
+    <button class="btn btn-secondary" style="width:100%;margin-top:10px;" onclick="addPhase()">+ Add country phase</button>
   </div>
 
   <!-- Projection -->
   <div class="card">
     <div class="card-title">Full trajectory</div>
-    <p class="api-note" style="margin-bottom:12px;">All values in today's purchasing power (real return = nominal − inflation).</p>
     <div id="freedom-proj"></div>
   </div>
 </div>
@@ -1359,7 +1356,7 @@ function deleteEditTx(){
 }
 
 // ── Overview ───────────────────────────────────────────────────────
-function getMonthData(month,year){
+function getMonthData(month,year,maxDay){
   let income=0,spent=0;const cats={};
   transactions.forEach(tx=>{
     const d=new Date(tx.date);
@@ -1367,8 +1364,11 @@ function getMonthData(month,year){
     if(tx.amort){
       const txM=d.getMonth()+d.getFullYear()*12,curM=month+year*12;
       if(curM<txM||curM>=txM+tx.months)return;
+      // For amortized: include if within month period (day filter applies only to original posting if equal month)
+      if(maxDay&&curM===txM&&d.getDate()>maxDay)return;
     } else {
       if(d.getMonth()!==month||d.getFullYear()!==year)return;
+      if(maxDay&&d.getDate()>maxDay)return;
     }
     if(tx.type==='income')income+=eff;else{spent+=eff;cats[tx.cat]=(cats[tx.cat]||0)+eff;}
   });
@@ -1405,10 +1405,13 @@ function renderOverview(){
   const monthName=new Date(viewYear,viewMonth,1).toLocaleString('default',{month:'long',year:'numeric'});
   document.getElementById('ov-month-title').textContent=monthName;
   const{income,spent,cats}=getMonthData(viewMonth,viewYear);
-  // Previous month for MoM comparison
+  // MoM: if viewing the current month, compare same day range (month-to-date vs prev month MTD)
+  const todayDate=new Date();
+  const isCurrentMonth=(viewMonth===todayDate.getMonth()&&viewYear===todayDate.getFullYear());
+  const maxDay=isCurrentMonth?todayDate.getDate():null;
   let prevM=viewMonth-1,prevY=viewYear;
   if(prevM<0){prevM=11;prevY--;}
-  const prev=getMonthData(prevM,prevY);
+  const prev=getMonthData(prevM,prevY,maxDay);
   const net=income-spent,sr=income>0?Math.round((net/income)*100):null;
   document.getElementById('ov-income').textContent=fmt(income);
   document.getElementById('ov-spent').textContent=fmt(spent);
@@ -1418,10 +1421,10 @@ function renderOverview(){
     const pct=((current-previous)/previous)*100;
     const arrow=pct>=0?'↑':'↓';
     const sign=pct>=0?'+':'';
-    // For income: up is good. For spent: up is bad.
     const isGood=goodWhenUp?pct>=0:pct<=0;
     const cls=Math.abs(pct)<1?'mom-flat':(isGood?'mom-good':'mom-bad');
-    return `<div class="mom ${cls}">${arrow} ${sign}${pct.toFixed(0)}% vs prev</div>`;
+    const suffix=isCurrentMonth?' vs prev MTD':' vs prev';
+    return `<div class="mom ${cls}">${arrow} ${sign}${pct.toFixed(0)}%${suffix}</div>`;
   }
   document.getElementById('ov-income-mom').innerHTML=momLabel(income,prev.income,true);
   document.getElementById('ov-spent-mom').innerHTML=momLabel(spent,prev.spent,false);
@@ -2176,6 +2179,104 @@ function syncSlider(sliderId,inputId){
   const v=parseFloat(inp.value);
   if(!isNaN(v))sl.value=Math.min(Math.max(v,parseFloat(sl.min)),parseFloat(sl.max));
 }
+// ── Freedom calculator ─────────────────────────────────────────────
+// Two modes: simple (single monthly investment) or multi-country (chronological phases).
+const COUNTRIES=[
+  {code:'DE',name:'Germany',flag:'🇩🇪'},
+  {code:'IT',name:'Italy',flag:'🇮🇹'},
+  {code:'AE',name:'UAE',flag:'🇦🇪'},
+  {code:'ES',name:'Spain',flag:'🇪🇸'},
+  {code:'US',name:'United States',flag:'🇺🇸'},
+  {code:'GB',name:'United Kingdom',flag:'🇬🇧'},
+  {code:'NL',name:'Netherlands',flag:'🇳🇱'},
+  {code:'CH',name:'Switzerland',flag:'🇨🇭'},
+  {code:'PT',name:'Portugal',flag:'🇵🇹'},
+  {code:'XX',name:'Other',flag:'🌍'}
+];
+const CURRENT_YEAR=new Date().getFullYear();
+let phases=JSON.parse(localStorage.getItem('fos_phases')||'null')||[
+  {country:'DE',startYear:CURRENT_YEAR,endYear:CURRENT_YEAR+1,monthly:1000},
+  {country:'AE',startYear:CURRENT_YEAR+1,endYear:CURRENT_YEAR+6,monthly:4000},
+  {country:'IT',startYear:CURRENT_YEAR+6,endYear:null,monthly:2000}
+];
+
+function savePhases(){localStorage.setItem('fos_phases',JSON.stringify(phases));}
+function countryFlag(code){const c=COUNTRIES.find(x=>x.code===code);return c?c.flag:'🌍';}
+function countryName(code){const c=COUNTRIES.find(x=>x.code===code);return c?c.name:'Other';}
+
+function toggleMultiCountry(){
+  const on=document.getElementById('multi-on').checked;
+  document.getElementById('simple-mode-card').style.display=on?'none':'';
+  document.getElementById('multi-mode-card').style.display=on?'':'none';
+  if(on)renderPhasesList();
+  updateFreedom();
+}
+
+function renderPhasesList(){
+  phases.sort((a,b)=>a.startYear-b.startYear);
+  savePhases();
+  const container=document.getElementById('phases-list');
+  if(!container)return;
+  container.innerHTML=phases.map((ph,i)=>{
+    const countryOpts=COUNTRIES.map(c=>`<option value="${c.code}" ${c.code===ph.country?'selected':''}>${c.flag} ${c.name}</option>`).join('');
+    return `<div class="phase-row">
+      <div class="phase-row-header">
+        <select class="phase-country-select" onchange="updatePhase(${i},'country',this.value)">${countryOpts}</select>
+        <button class="phase-remove" onclick="removePhase(${i})" title="Remove">×</button>
+      </div>
+      <div class="phase-grid">
+        <div><label>Start year</label><input type="number" inputmode="numeric" value="${ph.startYear}" min="2020" max="2080" onchange="updatePhase(${i},'startYear',parseInt(this.value)||${CURRENT_YEAR})"></div>
+        <div><label>End year</label>
+          <select onchange="updatePhaseEnd(${i},this.value)">
+            ${[...Array(40)].map((_,k)=>{const y=ph.startYear+k+1;return `<option value="${y}" ${ph.endYear===y?'selected':''}>${y}</option>`;}).join('')}
+            <option value="until-retire" ${ph.endYear===null?'selected':''}>Until retirement</option>
+          </select>
+        </div>
+      </div>
+      <div class="phase-grid" style="grid-template-columns:1fr;">
+        <div><label>Monthly investment (€)</label><input type="number" inputmode="decimal" value="${ph.monthly}" min="0" onchange="updatePhase(${i},'monthly',parseFloat(this.value)||0)"></div>
+      </div>
+      <div class="phase-summary">
+        ${countryFlag(ph.country)} ${countryName(ph.country)} · ${ph.endYear===null?'from '+ph.startYear+' until FI':ph.startYear+'–'+ph.endYear+' ('+(ph.endYear-ph.startYear)+' yrs)'} · €${ph.monthly.toLocaleString()}/mo
+      </div>
+    </div>`;
+  }).join('')||'<div class="empty">No phases. Click below to add one.</div>';
+}
+
+function updatePhase(i,field,val){
+  if(!phases[i])return;
+  phases[i][field]=val;
+  if(field==='startYear')renderPhasesList();
+  else savePhases();
+  updateFreedom();
+}
+
+function updatePhaseEnd(i,val){
+  if(!phases[i])return;
+  if(val==='until-retire')phases[i].endYear=null;
+  else phases[i].endYear=parseInt(val);
+  savePhases();
+  updateFreedom();
+}
+
+function addPhase(){
+  let startYear=CURRENT_YEAR;
+  if(phases.length>0){
+    const last=phases[phases.length-1];
+    startYear=last.endYear||last.startYear+1;
+  }
+  phases.push({country:'DE',startYear,endYear:startYear+1,monthly:1000});
+  renderPhasesList();
+  updateFreedom();
+}
+
+function removePhase(i){
+  if(!confirm('Remove this phase?'))return;
+  phases.splice(i,1);
+  renderPhasesList();
+  updateFreedom();
+}
+
 function updateFreedom(){
   const income=parseFloat(document.getElementById('sl-income-val').value)||5000;
   const age=parseFloat(document.getElementById('sl-age-val').value)||33;
@@ -2188,42 +2289,37 @@ function updateFreedom(){
   const inflation=inflOn?((inflEl?parseFloat(inflEl.value):2.8)/100):0;
   const realReturn=(1+nominal)/(1+inflation)-1;
   const target=income*12*25;
+  const multiOn=document.getElementById('multi-on').checked;
 
-  // Phase inputs
-  const ph1Years=parseInt(document.getElementById('ph1-years-val').value)||0;
-  const ph1Invest=parseFloat(document.getElementById('ph1-invest-val').value)||0;
-  const ph2Years=parseInt(document.getElementById('ph2-years-val').value)||0;
-  const ph2Invest=parseFloat(document.getElementById('ph2-invest-val').value)||0;
-  const ph2Flat=document.getElementById('ph2-flat-check').checked;
-  const ph3Invest=parseFloat(document.getElementById('ph3-invest-val').value)||0;
-  const FLAT_VALUE=166000;
+  let getMonthlyForYear;
+  if(multiOn){
+    phases.sort((a,b)=>a.startYear-b.startYear);
+    getMonthlyForYear=(off)=>{
+      const yr=CURRENT_YEAR+off;
+      for(const ph of phases){
+        const end=ph.endYear===null?9999:ph.endYear;
+        if(yr>=ph.startYear&&yr<end)return ph.monthly;
+      }
+      return 0;
+    };
+  } else {
+    const flatMonthly=parseFloat(document.getElementById('simple-invest-val').value)||0;
+    getMonthlyForYear=()=>flatMonthly;
+  }
 
-  // Simulate phase by phase
-  let p=assets,totalYears=0;
+  let p=assets,years=0;
+  while(p<target&&years<60){
+    const monthly=getMonthlyForYear(years);
+    p=p*(1+realReturn)+monthly*12;
+    years++;
+  }
+  const fiAge=age+years;
+  const fiYear=CURRENT_YEAR+years;
 
-  // Phase 1: Berlin
-  for(let i=0;i<ph1Years;i++){p=p*(1+realReturn)+ph1Invest*12;totalYears++;}
-  const ph1EndPortfolio=Math.round(p);
-  const ph1EndAge=age+totalYears;
-
-  // Phase 2: Dubai — add flat equity at start of phase 2 exit if toggled
-  for(let i=0;i<ph2Years;i++){p=p*(1+realReturn)+ph2Invest*12;totalYears++;}
-  if(ph2Flat)p+=FLAT_VALUE;
-  const ph2EndPortfolio=Math.round(p);
-  const ph2EndAge=age+totalYears;
-
-  // Phase 3: Southern Europe — invest until FI
-  const ph3StartAge=ph2EndAge;
-  let ph3Years=0;
-  while(p<target&&ph3Years<60){p=p*(1+realReturn)+ph3Invest*12;ph3Years++;totalYears++;}
-  const fiAge=age+totalYears;
-  const fiYear=new Date().getFullYear()+totalYears;
-
-  // Update hero
-  document.getElementById('ret-year').textContent=totalYears<60?fiYear:'60+';
-  document.getElementById('ret-age-result').textContent='Age '+fiAge+' · in '+totalYears+' years';
+  document.getElementById('ret-year').textContent=years<60?fiYear:'60+';
+  document.getElementById('ret-age-result').textContent='Age '+fiAge+' · in '+years+' years';
   if(inflOn){
-    const futureNominal=income*Math.pow(1+inflation,totalYears);
+    const futureNominal=income*Math.pow(1+inflation,years);
     document.getElementById('ret-target').textContent=
       'Target: '+fmt(target)+' ('+fmt(income)+'/mo today · ~'+fmt(futureNominal)+'/mo nominal at FI)';
   } else {
@@ -2231,45 +2327,37 @@ function updateFreedom(){
       'Target: '+fmt(target)+' ('+fmt(income)+'/mo × 25 years)';
   }
 
-  // Update phase labels
-  document.getElementById('ph1-end-label').textContent='→ age '+ph1EndAge;
-  document.getElementById('ph2-end-label').textContent='→ age '+ph2EndAge;
-  document.getElementById('ph3-fi-label').textContent='FI at age '+fiAge;
-
-  // Update phase summaries
-  document.getElementById('ph1-end-val').textContent=fmt(ph1EndPortfolio);
-  document.getElementById('ph2-end-val').textContent=fmt(ph2EndPortfolio)+(ph2Flat?' (incl. flat +'+fmt(FLAT_VALUE)+')':'');
-  document.getElementById('ph3-years-val').textContent=ph3Years+' years (age '+ph3StartAge+' → '+fiAge+')';
-
-  // Full trajectory rows
-  const milestoneAges=[ph1EndAge,ph2EndAge].filter(a=>a>age);
-  // Also show every 5 years and the FI point
-  const allYears=new Set();
-  for(let y=5;y<=totalYears+5;y+=5)allYears.add(y);
-  allYears.add(totalYears);
-  const sortedYears=[...allYears].sort((a,b)=>a-b).filter(y=>y>0&&y<=totalYears+1);
+  const milestones=new Set();
+  for(let y=5;y<=years;y+=5)milestones.add(y);
+  milestones.add(years);
+  if(multiOn){
+    phases.forEach(ph=>{
+      const off=ph.startYear-CURRENT_YEAR;
+      if(off>0&&off<years)milestones.add(off);
+      if(ph.endYear!==null){
+        const eo=ph.endYear-CURRENT_YEAR;
+        if(eo>0&&eo<years)milestones.add(eo);
+      }
+    });
+  }
+  const sortedYears=[...milestones].sort((a,b)=>a-b).filter(y=>y>0&&y<=years+1);
 
   let simP=assets,simY=0;
   const rows=[];
   for(const y of sortedYears){
-    while(simY<y&&simY<totalYears){
-      // Determine which phase and invest rate
-      let inv=0;
-      if(simY<ph1Years)inv=ph1Invest;
-      else if(simY<ph1Years+ph2Years)inv=ph2Invest;
-      else inv=ph3Invest;
-      simP=simP*(1+realReturn)+inv*12;
+    while(simY<y&&simY<years){
+      const monthly=getMonthlyForYear(simY);
+      simP=simP*(1+realReturn)+monthly*12;
       simY++;
-      // Apply flat bonus at exact end of phase 2
-      if(ph2Flat&&simY===ph1Years+ph2Years)simP+=FLAT_VALUE;
     }
     const pct=Math.min(100,Math.round((simP/target)*100));
-    const isPhase1End=y===ph1Years;
-    const isPhase2End=y===ph1Years+ph2Years;
-    const isFI=y===totalYears;
-    let label='Year '+y+' · Age '+(age+y)+' ('+( new Date().getFullYear()+y)+')';
-    if(isPhase1End)label+=' 📍 Leave Berlin';
-    if(isPhase2End)label+=' 🇦🇪 Leave Dubai';
+    const isFI=y===years;
+    let label='Year '+y+' · Age '+(age+y)+' ('+(CURRENT_YEAR+y)+')';
+    if(multiOn){
+      const yr=CURRENT_YEAR+y;
+      const startedHere=phases.find(ph=>ph.startYear===yr);
+      if(startedHere)label+=' '+countryFlag(startedHere.country);
+    }
     if(isFI)label+=' 🎯 FI';
     rows.push(`<div class="proj-row" style="${isFI?'border-top:1px solid var(--green);padding-top:10px;margin-top:4px;':''}">
       <div class="proj-year" style="${isFI?'color:var(--green);font-weight:600;':''}">${label}</div>
@@ -2345,6 +2433,11 @@ function showScreen(id,btn){
       document.getElementById('sl-assets-val').value=Math.round(wealth.broker);
       document.getElementById('sl-assets').value=Math.min(Math.round(wealth.broker),2000000);
     }
+    // Ensure UI matches multi-on state on every open
+    const multiOn=document.getElementById('multi-on').checked;
+    document.getElementById('simple-mode-card').style.display=multiOn?'none':'';
+    document.getElementById('multi-mode-card').style.display=multiOn?'':'none';
+    if(multiOn)renderPhasesList();
     updateFreedom();
   }
   if(id==='portfolio')renderPortfolio();
