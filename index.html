@@ -15,11 +15,14 @@
   .app{display:flex;flex-direction:column;height:100vh;height:-webkit-fill-available;max-width:430px;margin:0 auto;}
   .screen{display:none;flex:1;overflow-y:auto;padding:20px 16px 100px;}
   .screen.active{display:block;}
-  .nav{display:flex;justify-content:space-around;background:var(--bg2);border-top:0.5px solid var(--border);padding:8px 0 20px;flex-shrink:0;overflow-x:auto;}
-  .nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:4px 6px;flex-shrink:0;}
-  .nav-icon{font-size:18px;line-height:1;}
-  .nav-label{font-size:9px;color:var(--text2);letter-spacing:0.02em;}
-  .nav-btn.active .nav-label{color:var(--green);}
+  .nav{display:flex;background:var(--bg2);border-top:0.5px solid var(--border);padding:10px 12px 24px;flex-shrink:0;overflow-x:auto;scroll-behavior:smooth;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;gap:6px;scrollbar-width:none;}
+  .nav::-webkit-scrollbar{display:none;}
+  .nav-btn{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:8px 14px;flex-shrink:0;scroll-snap-align:center;border-radius:14px;transition:background 0.2s,padding 0.2s;min-width:60px;-webkit-tap-highlight-color:transparent;}
+  .nav-icon{font-size:22px;line-height:1;opacity:0.55;transition:font-size 0.2s,opacity 0.2s;}
+  .nav-label{font-size:11px;color:var(--text2);letter-spacing:0.02em;opacity:0.7;transition:font-size 0.2s,color 0.2s,opacity 0.2s;}
+  .nav-btn.active{background:rgba(29,185,84,0.12);padding:10px 18px;}
+  .nav-btn.active .nav-icon{font-size:30px;opacity:1;color:var(--green);}
+  .nav-btn.active .nav-label{font-size:13px;color:var(--green);font-weight:600;opacity:1;}
   .screen-header{margin-bottom:20px;}
   .screen-title{font-size:28px;font-weight:700;letter-spacing:-0.5px;}
   .screen-sub{font-size:13px;color:var(--text2);margin-top:2px;}
@@ -29,6 +32,10 @@
   .metric{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:14px;}
   .metric-label{font-size:11px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;}
   .metric-value{font-size:20px;font-weight:600;letter-spacing:-0.5px;}
+  .mom{font-size:11px;font-weight:500;margin-top:4px;letter-spacing:-0.1px;}
+  .mom-good{color:var(--green);}
+  .mom-bad{color:var(--red);}
+  .mom-flat{color:var(--text2);}
   .green{color:var(--green);}.red{color:var(--red);}.blue{color:var(--blue);}.amber{color:var(--amber);}
   label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;}
   input,select,textarea{width:100%;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:16px;padding:12px 14px;margin-bottom:12px;appearance:none;-webkit-appearance:none;}
@@ -96,13 +103,13 @@
   .success-flash.show{opacity:1;}
   .tx-item{cursor:pointer;-webkit-tap-highlight-color:rgba(255,255,255,0.05);padding:12px 14px;border-radius:var(--radius-sm);transition:background 0.1s;}
   .tx-item:active{background:var(--bg3);}
-  .day-group{margin-bottom:18px;}
-  .day-header{display:flex;justify-content:space-between;align-items:baseline;padding:6px 4px 8px;border-bottom:0.5px solid var(--border);margin-bottom:6px;}
-  .day-label{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-0.2px;}
-  .day-total{font-size:13px;font-weight:500;color:var(--text2);}
+  .day-group{margin-bottom:24px;}
+  .day-header{display:flex;justify-content:space-between;align-items:baseline;padding:16px 4px 12px;border-bottom:0.5px solid var(--border);margin-bottom:10px;}
+  .day-label{font-size:19px;font-weight:700;color:var(--text);letter-spacing:-0.4px;line-height:1.2;}
+  .day-total{font-size:15px;font-weight:600;color:var(--text2);}
   .day-total.green{color:var(--green);}
-  .day-total.red{color:var(--text2);}
-  .day-txs .tx-item{padding:10px 12px;}
+  .day-total.red{color:var(--text);}
+  .day-txs .tx-item{padding:12px 12px;}
   .day-txs .tx-item + .tx-item{border-top:0.5px solid var(--border);}
   .tx-item:active{background:var(--bg3);}
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;align-items:flex-start;justify-content:center;padding:60px 16px 16px;overflow-y:auto;}
@@ -184,9 +191,9 @@
   .pin-dot.filled{background:var(--green);border-color:var(--green);}
   .pin-dot.error{background:var(--red);border-color:var(--red);animation:shake 0.4s;}
   @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
-  .pin-pad{display:grid;grid-template-columns:repeat(3,72px);gap:14px;}
-  .pin-key{width:72px;height:72px;border-radius:50%;background:var(--bg2);border:0.5px solid var(--border);color:var(--text);font-size:24px;font-weight:500;cursor:pointer;transition:background 0.1s;display:flex;align-items:center;justify-content:center;}
-  .pin-key:active{background:var(--bg3);}
+  .pin-pad{display:grid;grid-template-columns:repeat(3,88px);gap:18px;}
+  .pin-key{width:88px;height:88px;border-radius:50%;background:var(--bg2);border:0.5px solid var(--border);color:var(--text);font-size:32px;font-weight:400;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+  .pin-key:active{background:var(--bg3);transform:scale(0.95);}
   .pin-key.special{background:transparent;border:none;font-size:14px;color:var(--text2);}
   .pin-error{color:var(--red);font-size:13px;margin-top:16px;height:18px;}
   .lock-link{font-size:13px;color:var(--blue);margin-top:20px;cursor:pointer;background:none;border:none;padding:8px 16px;}
@@ -318,10 +325,10 @@
   <div class="year-tabs" id="year-tabs"></div>
   <div class="month-nav" id="month-nav"></div>
   <div class="metric-grid">
-    <div class="metric"><div class="metric-label">Income</div><div class="metric-value green" id="ov-income">€0</div></div>
-    <div class="metric"><div class="metric-label">Spent</div><div class="metric-value red" id="ov-spent">€0</div></div>
-    <div class="metric"><div class="metric-label">Net</div><div class="metric-value" id="ov-net">€0</div></div>
-    <div class="metric"><div class="metric-label">Savings rate</div><div class="metric-value" id="ov-sr">—</div></div>
+    <div class="metric"><div class="metric-label">Income</div><div class="metric-value green" id="ov-income">€0</div><div id="ov-income-mom"></div></div>
+    <div class="metric"><div class="metric-label">Spent</div><div class="metric-value red" id="ov-spent">€0</div><div id="ov-spent-mom"></div></div>
+    <div class="metric"><div class="metric-label">Net</div><div class="metric-value" id="ov-net">€0</div><div id="ov-net-mom"></div></div>
+    <div class="metric"><div class="metric-label">Savings rate</div><div class="metric-value" id="ov-sr">—</div><div id="ov-sr-mom"></div></div>
   </div>
   <div class="card"><div class="card-title">By category</div><div id="cat-bars"><div class="empty">No expenses yet</div></div></div>
   <div class="card"><div class="card-title">Entries</div><div id="tx-list"><div class="empty">Nothing logged yet</div></div></div>
@@ -505,7 +512,12 @@
       <div class="slider-header"><span class="slider-label">Expected return (%, nominal)</span><input class="slider-input" id="sl-rate-val" type="number" inputmode="decimal" value="7" step="0.5" oninput="syncSlider('sl-rate','sl-rate-val');updateFreedom()"></div>
       <input type="range" min="1" max="15" step="0.5" value="7" id="sl-rate" oninput="syncInput('sl-rate','sl-rate-val');updateFreedom()">
     </div>
-    <div class="slider-block">
+    <div class="amort-row" style="margin:10px 0 6px;">
+      <input type="checkbox" id="sl-infl-on" onchange="updateFreedom()">
+      <label for="sl-infl-on" style="margin:0;cursor:pointer;font-size:14px;">Account for inflation</label>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px;margin-left:26px;">When on, values stay in today's purchasing power. We can discuss this together.</div>
+    <div class="slider-block" id="infl-block" style="display:none;">
       <div class="slider-header"><span class="slider-label">Annual inflation (%)</span><input class="slider-input" id="sl-infl-val" type="number" inputmode="decimal" value="2.8" step="0.1" oninput="syncSlider('sl-infl','sl-infl-val');updateFreedom()"></div>
       <input type="range" min="0" max="6" step="0.1" value="2.8" id="sl-infl" oninput="syncInput('sl-infl','sl-infl-val');updateFreedom()">
     </div>
@@ -731,6 +743,7 @@ function showLockUI(which){
 
 function setupKey(d){
   if(setupPin.length>=4)return;
+  hapticTap();
   setupPin+=d;
   paintDots('setup-pin-dots',setupPin.length);
   if(setupPin.length===4){
@@ -807,9 +820,15 @@ function flashError(containerId){
   document.querySelectorAll('#'+containerId+' .pin-dot').forEach(d=>d.classList.add('error'));
 }
 
+function hapticTap(){
+  // Light haptic feedback on iOS - works in PWA via Web Vibration API where supported
+  if(navigator.vibrate)navigator.vibrate(10);
+}
+
 function pinKey(d){
   if(isLockedOut())return;
   if(entryPin.length>=4)return;
+  hapticTap();
   entryPin+=d;
   paintDots('pin-dots',entryPin.length);
   if(entryPin.length===4)tryUnlock();
@@ -817,6 +836,7 @@ function pinKey(d){
 
 function pinDelete(){
   if(entryPin.length>0){
+    hapticTap();
     entryPin=entryPin.slice(0,-1);
     paintDots('pin-dots',entryPin.length);
   }
@@ -1385,15 +1405,36 @@ function renderOverview(){
   const monthName=new Date(viewYear,viewMonth,1).toLocaleString('default',{month:'long',year:'numeric'});
   document.getElementById('ov-month-title').textContent=monthName;
   const{income,spent,cats}=getMonthData(viewMonth,viewYear);
+  // Previous month for MoM comparison
+  let prevM=viewMonth-1,prevY=viewYear;
+  if(prevM<0){prevM=11;prevY--;}
+  const prev=getMonthData(prevM,prevY);
   const net=income-spent,sr=income>0?Math.round((net/income)*100):null;
   document.getElementById('ov-income').textContent=fmt(income);
   document.getElementById('ov-spent').textContent=fmt(spent);
+  // MoM helper: returns formatted "+12% vs prev" string with color
+  function momLabel(current,previous,goodWhenUp){
+    if(!previous||previous===0)return '';
+    const pct=((current-previous)/previous)*100;
+    const arrow=pct>=0?'↑':'↓';
+    const sign=pct>=0?'+':'';
+    // For income: up is good. For spent: up is bad.
+    const isGood=goodWhenUp?pct>=0:pct<=0;
+    const cls=Math.abs(pct)<1?'mom-flat':(isGood?'mom-good':'mom-bad');
+    return `<div class="mom ${cls}">${arrow} ${sign}${pct.toFixed(0)}% vs prev</div>`;
+  }
+  document.getElementById('ov-income-mom').innerHTML=momLabel(income,prev.income,true);
+  document.getElementById('ov-spent-mom').innerHTML=momLabel(spent,prev.spent,false);
   const netEl=document.getElementById('ov-net');
   netEl.textContent=(net>=0?'+':'-')+S()+Math.abs(Math.round(net)).toLocaleString();
   netEl.className='metric-value '+(net>=0?'green':'red');
+  const prevNet=prev.income-prev.spent;
+  document.getElementById('ov-net-mom').innerHTML=momLabel(net,prevNet,true);
   const srEl=document.getElementById('ov-sr');
   srEl.textContent=sr!==null?sr+'%':'—';
   srEl.className='metric-value '+(sr===null?'':sr>=20?'green':sr>=0?'amber':'red');
+  const prevSr=prev.income>0?Math.round(((prev.income-prev.spent)/prev.income)*100):null;
+  document.getElementById('ov-sr-mom').innerHTML=(sr!==null&&prevSr!==null)?`<div class="mom mom-flat">prev ${prevSr}%</div>`:'';
   const cols=['#1db954','#3b82f6','#f59e0b','#e8453c','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'];
   const sorted=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
   const maxV=sorted.length>0?sorted[0][1]:1;
@@ -1418,9 +1459,13 @@ function renderOverview(){
   const yesterday=new Date(today);yesterday.setDate(yesterday.getDate()-1);
   function dayLabel(dateStr){
     const d=new Date(dateStr);d.setHours(0,0,0,0);
-    if(d.getTime()===today.getTime())return 'Today';
-    if(d.getTime()===yesterday.getTime())return 'Yesterday';
-    return d.toLocaleDateString('default',{day:'numeric',month:'long'});
+    const weekday=d.toLocaleDateString('default',{weekday:'long'});
+    const day=d.getDate();
+    const month=d.toLocaleDateString('default',{month:'long'});
+    let suffix='';
+    if(d.getTime()===today.getTime())suffix=' (today)';
+    else if(d.getTime()===yesterday.getTime())suffix=' (yesterday)';
+    return weekday+' '+day+' '+month+suffix;
   }
   const groups={};
   monthTx.forEach(tx=>{
@@ -2137,9 +2182,12 @@ function updateFreedom(){
   const assets=parseFloat(document.getElementById('sl-assets-val').value)||0;
   const nominal=(parseFloat(document.getElementById('sl-rate-val').value)||7)/100;
   const inflEl=document.getElementById('sl-infl-val');
-  const inflation=(inflEl?parseFloat(inflEl.value):2.8)/100;
+  const inflOn=document.getElementById('sl-infl-on').checked;
+  const inflBlock=document.getElementById('infl-block');
+  if(inflBlock)inflBlock.style.display=inflOn?'':'none';
+  const inflation=inflOn?((inflEl?parseFloat(inflEl.value):2.8)/100):0;
   const realReturn=(1+nominal)/(1+inflation)-1;
-  const target=income*12*25; // 25x annual income = FI threshold
+  const target=income*12*25;
 
   // Phase inputs
   const ph1Years=parseInt(document.getElementById('ph1-years-val').value)||0;
@@ -2174,9 +2222,14 @@ function updateFreedom(){
   // Update hero
   document.getElementById('ret-year').textContent=totalYears<60?fiYear:'60+';
   document.getElementById('ret-age-result').textContent='Age '+fiAge+' · in '+totalYears+' years';
-  const futureNominal=income*Math.pow(1+inflation,totalYears);
-  document.getElementById('ret-target').textContent=
-    'Target: '+fmt(target)+' ('+fmt(income)+'/mo today · ~'+fmt(futureNominal)+'/mo nominal at FI)';
+  if(inflOn){
+    const futureNominal=income*Math.pow(1+inflation,totalYears);
+    document.getElementById('ret-target').textContent=
+      'Target: '+fmt(target)+' ('+fmt(income)+'/mo today · ~'+fmt(futureNominal)+'/mo nominal at FI)';
+  } else {
+    document.getElementById('ret-target').textContent=
+      'Target: '+fmt(target)+' ('+fmt(income)+'/mo × 25 years)';
+  }
 
   // Update phase labels
   document.getElementById('ph1-end-label').textContent='→ age '+ph1EndAge;
@@ -2283,6 +2336,8 @@ function showScreen(id,btn){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
   btn.classList.add('active');
+  // Center the active tab in the scrollable nav
+  if(btn.scrollIntoView)btn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
   if(id==='overview')renderOverview();
   if(id==='wealth')renderWealth();
   if(id==='freedom'){
