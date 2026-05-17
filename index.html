@@ -223,7 +223,7 @@
   .recovery-input{font-family:'SF Mono',monospace;letter-spacing:1px;text-transform:uppercase;}
   .face-id-btn{background:var(--bg2);border:0.5px solid var(--border2);border-radius:50%;width:56px;height:56px;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;margin-top:20px;}
   .face-id-btn:active{background:var(--bg3);}
-  .private-mode .private-mask,.private-mode .nw-total,.private-mode .metric-value,.private-mode .port-current-val,.private-mode .port-stat-val,.private-mode .port-gain-line,.private-mode .pos-val,.private-mode .pos-pnl,.private-mode .tx-amount,.private-mode .asset-val,.private-mode .bar-amt,.private-mode .cash-total-val,.private-mode .flat-stat-val,.private-mode .proj-val,.private-mode .retire-year,.private-mode .port-total,.private-mode .port-current,.private-mode .pos-detail,.private-mode .pos-allocation,.private-mode #split-etf-pct,.private-mode #split-stock-pct,.private-mode #pos-count,.private-mode #crypto-total,.private-mode #port-cost,.private-mode #port-pnl,.private-mode .split-bar,.private-mode .split-etf,.private-mode .split-stock{filter:blur(8px);user-select:none;transition:filter 0.15s;}
+  .private-mode .private-mask,.private-mode .nw-total,.private-mode .metric-value,.private-mode .port-current-val,.private-mode .port-stat-val,.private-mode .port-gain-line,.private-mode .pos-val,.private-mode .pos-pnl,.private-mode .tx-amount,.private-mode .asset-val,.private-mode .bar-amt,.private-mode .cash-total-val,.private-mode .flat-stat-val,.private-mode .proj-val,.private-mode .retire-year,.private-mode .port-total,.private-mode .port-current,.private-mode .pos-detail,.private-mode .pos-allocation,.private-mode #split-etf-pct,.private-mode #split-stock-pct,.private-mode #pos-count,.private-mode #crypto-total,.private-mode #port-cost,.private-mode #port-pnl,.private-mode .split-bar,.private-mode .split-etf,.private-mode .split-stock,.private-mode .crypto-val,.private-mode .crypto-qty,.private-mode .mom,.private-mode .day-total{filter:blur(8px);user-select:none;transition:filter 0.15s;}
   .private-mode .private-mask:active,.private-mode .nw-total:active,.private-mode .metric-value:active,.private-mode .port-current-val:active,.private-mode .pos-val:active,.private-mode .tx-amount:active,.private-mode .asset-val:active{filter:none;}
 </style>
 </head>
@@ -1592,7 +1592,7 @@ function renderPortfolio(){
           <div class="pos-allocation">${p.allocationPct.toFixed(1)}% of portfolio</div>
         </div>
         <div class="pos-edit ${isEditing?'visible':''}">
-          <div class="pos-edit-row"><div><label>Update price (${p.currency})</label><input type="number" id="edit-price-${p.symbol}" step="0.01" placeholder="${p.currentPrice.toFixed(2)}" value="${p.currentPrice}"></div><button class="pos-edit-btn" onclick="event.stopPropagation();updatePrice('${p.symbol}')">Save</button></div>
+          <div class="pos-edit-row"><div><label>Update price (${p.currency})</label><input type="number" id="edit-price-${p.symbol}" step="0.01" placeholder="${p.currentPrice.toFixed(2)}" value="${p.currentPrice}"></div><div><label>Type</label><select id="edit-type-${p.symbol}"><option value="Stock" ${p.type==='Stock'?'selected':''}>Stock</option><option value="ETF" ${p.type==='ETF'?'selected':''}>ETF</option></select></div><button class="pos-edit-btn" onclick="event.stopPropagation();updatePosition('${p.symbol}')">Save</button></div>
         </div>
       </div>`;
     }).join('');
@@ -1608,12 +1608,14 @@ function setFilter(type){
   renderPortfolio();
 }
 function toggleEdit(symbol){editingPosition=editingPosition===symbol?null:symbol;renderPortfolio();}
-function updatePrice(symbol){
+function updatePosition(symbol){
   const newPrice=parseFloat(document.getElementById('edit-price-'+symbol).value);
+  const newType=document.getElementById('edit-type-'+symbol).value;
   if(isNaN(newPrice)||newPrice<=0){alert('Enter a valid price.');return;}
   const idx=positions.findIndex(p=>p.symbol===symbol);
   if(idx>=0){
     positions[idx].currentPrice=newPrice;
+    positions[idx].type=newType;
     posUpdatedAt='manual update '+new Date().toLocaleDateString();
     posUpdatedTimestamp=Date.now();
     localStorage.setItem('fos_positions',JSON.stringify(positions));
@@ -1624,6 +1626,8 @@ function updatePrice(symbol){
     flash(symbol+' updated');
   }
 }
+// Backward compat for any old callers
+function updatePrice(symbol){updatePosition(symbol);}
 
 function importCSV(event){
   const file=event.target.files[0];if(!file)return;
@@ -2028,14 +2032,14 @@ function renderCryptoExchanges(){
       const priceStr=price?'$'+price.usd.toFixed(2):'—';
       const changeStr=price?(change>=0?'+':'')+change.toFixed(1)+'%':'—';
       return`<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;">
-        <div><span style="font-weight:600;">${c.symbol}</span> <span style="color:var(--text3);font-size:11px;">${c.qty}</span> · <span style="color:var(--text2);font-size:11px;">${priceStr} <span class="${changeClass}">${changeStr}</span></span></div>
-        <div style="font-weight:600;">${fmt(valEUR)}</div>
+        <div><span style="font-weight:600;">${c.symbol}</span> <span class="crypto-qty" style="color:var(--text3);font-size:11px;">${c.qty}</span> · <span style="color:var(--text2);font-size:11px;">${priceStr} <span class="${changeClass}">${changeStr}</span></span></div>
+        <div class="crypto-val" style="font-weight:600;">${fmt(valEUR)}</div>
       </div>`;
     }).join('');
     return`<div style="margin-bottom:14px;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
         <div style="font-size:12px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:0.06em;">${exchange}</div>
-        <div style="font-size:14px;font-weight:600;">${fmt(exchangeTotal)}</div>
+        <div class="crypto-val" style="font-size:14px;font-weight:600;">${fmt(exchangeTotal)}</div>
       </div>
       ${coinRows}
     </div>`;
@@ -2212,6 +2216,44 @@ function toggleMultiCountry(){
   updateFreedom();
 }
 
+function restoreFreedomPrefs(){
+  // Load saved Freedom settings from localStorage on app start / tab open
+  try{
+    const saved=JSON.parse(localStorage.getItem('fos_freedom')||'null');
+    if(!saved)return;
+    if(saved.income!=null){
+      document.getElementById('sl-income-val').value=saved.income;
+      document.getElementById('sl-income').value=Math.min(saved.income,20000);
+    }
+    if(saved.age!=null){
+      document.getElementById('sl-age-val').value=saved.age;
+      document.getElementById('sl-age').value=Math.min(Math.max(saved.age,20),65);
+    }
+    if(saved.assets!=null){
+      document.getElementById('sl-assets-val').value=saved.assets;
+      document.getElementById('sl-assets').value=Math.min(saved.assets,2000000);
+    }
+    if(saved.nominal!=null){
+      document.getElementById('sl-rate-val').value=saved.nominal;
+      document.getElementById('sl-rate').value=Math.min(Math.max(saved.nominal,1),15);
+    }
+    if(saved.inflOn!=null){
+      document.getElementById('sl-infl-on').checked=saved.inflOn;
+    }
+    if(saved.inflation!=null){
+      document.getElementById('sl-infl-val').value=saved.inflation;
+      document.getElementById('sl-infl').value=Math.min(Math.max(saved.inflation,0),6);
+    }
+    if(saved.multiOn!=null){
+      document.getElementById('multi-on').checked=saved.multiOn;
+    }
+    if(saved.simpleInvest!=null){
+      document.getElementById('simple-invest-val').value=saved.simpleInvest;
+      document.getElementById('simple-invest').value=Math.min(saved.simpleInvest,15000);
+    }
+  }catch(e){console.warn('Failed to restore Freedom prefs:',e);}
+}
+
 function renderPhasesList(){
   phases.sort((a,b)=>a.startYear-b.startYear);
   savePhases();
@@ -2290,6 +2332,11 @@ function updateFreedom(){
   const realReturn=(1+nominal)/(1+inflation)-1;
   const target=income*12*25;
   const multiOn=document.getElementById('multi-on').checked;
+  // Persist all Freedom inputs - so prefs survive across sessions
+  const simpleInvest=parseFloat(document.getElementById('simple-invest-val').value)||0;
+  localStorage.setItem('fos_freedom',JSON.stringify({
+    income,age,assets,nominal:nominal*100,inflOn,inflation:inflation*100,multiOn,simpleInvest
+  }));
 
   let getMonthlyForYear;
   if(multiOn){
@@ -2429,6 +2476,7 @@ function showScreen(id,btn){
   if(id==='overview')renderOverview();
   if(id==='wealth')renderWealth();
   if(id==='freedom'){
+    restoreFreedomPrefs();
     if(wealth.broker>0){
       document.getElementById('sl-assets-val').value=Math.round(wealth.broker);
       document.getElementById('sl-assets').value=Math.min(Math.round(wealth.broker),2000000);
@@ -2463,6 +2511,14 @@ function showScreen(id,btn){
   }
 })();
 
+restoreFreedomPrefs();
+// Apply multi-mode UI state at startup
+(function applyMultiState(){
+  const multiOn=document.getElementById('multi-on').checked;
+  document.getElementById('simple-mode-card').style.display=multiOn?'none':'';
+  document.getElementById('multi-mode-card').style.display=multiOn?'':'none';
+  if(multiOn)renderPhasesList();
+})();
 updateFreedom();
 updateFXDisplay();
 applyPrivateMode();
