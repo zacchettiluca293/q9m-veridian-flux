@@ -250,6 +250,11 @@
   .reval-row:last-child{border-bottom:none;}
   .nw{white-space:nowrap;}
   .reval-row>div:first-child{min-width:0;flex:1;}.reval-row .btn-sm{flex-shrink:0;}
+  .toggle-btn.active.invest{color:var(--blue);}
+  .kind-hint{font-size:11px;margin:-6px 0 12px;color:var(--text3);}.kind-hint.k-expense{color:var(--red);}.kind-hint.k-invest{color:var(--blue);}.kind-hint.k-income{color:var(--green);}
+  .kind-tag{display:inline-block;font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:4px;margin-left:8px;vertical-align:2px;}
+  .kind-expense{background:rgba(232,69,60,.14);color:var(--red);}.kind-invest{background:rgba(59,130,246,.16);color:var(--blue);}.kind-income{background:rgba(29,185,84,.16);color:var(--green);}
+  .tx-amount.inv{color:var(--blue);}
   .coach-h{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600;margin:14px 0 2px;}
   .coach-h:first-child{margin-top:0;}
   .coach-note{font-size:11px;color:var(--text3);line-height:1.5;margin-top:10px;}
@@ -385,10 +390,12 @@
 <!-- LOG TAB -->
 <div id="screen-log" class="screen active">
   <div class="screen-header"><div class="screen-title">Log</div><div class="screen-sub">Record every euro and dirham.</div></div>
-  <div class="toggle-row">
-    <button class="toggle-btn active expense" onclick="setType('expense',this)">Expense</button>
-    <button class="toggle-btn income" onclick="setType('income',this)">Income</button>
+  <div class="toggle-row" id="log-kind">
+    <button class="toggle-btn active expense" data-kind="expense" onclick="setKind('expense')">Expense</button>
+    <button class="toggle-btn invest" data-kind="invest" onclick="setKind('invest')">Investment</button>
+    <button class="toggle-btn income" data-kind="income" onclick="setKind('income')">Income</button>
   </div>
+  <div class="kind-hint k-expense" id="log-kind-hint">Counts in Expenses</div>
   <label>Amount</label>
   <div class="amount-row">
     <input id="tx-amount" type="number" inputmode="decimal" placeholder="0.00">
@@ -399,14 +406,7 @@
   <div class="row">
     <div>
       <label>Category</label>
-      <select id="tx-cat" onchange="onCategoryChange(this.value)">
-        <optgroup label="Essentials"><option>Housing</option><option>Utilities</option><option>Telecom</option><option>Groceries</option><option>Transport</option><option>Health</option><option>Pet</option><option>Baby</option><option>Sobha bills &amp; fees</option></optgroup>
-        <optgroup label="Family"><option>Aurora fund</option></optgroup>
-        <optgroup label="Lifestyle"><option>Dining Out</option><option>Travel</option><option>Entertainment</option><option>Shopping</option><option>Personal Care</option></optgroup>
-        <optgroup label="Investing"><option>IBKR</option><option value="Sobha">Sobha installment</option><option>Crypto</option></optgroup>
-        <optgroup label="Income"><option>Salary</option><option>Bonus</option><option>Side income</option><option>Refund</option></optgroup>
-        <optgroup label="One-offs"><option>Instalments</option><option>Gift</option><option>Education</option><option>Other</option></optgroup>
-      </select>
+      <select id="tx-cat" onchange="onCategoryChange(this.value)"></select>
     </div>
     <div><label>Date</label><input id="tx-date" type="date"></div>
   </div>
@@ -435,7 +435,7 @@
       <div class="metric-label">Where your income went <span class="metric-hint">tap to set targets</span></div>
       <div class="alloc-bar" id="alloc-bar"><div class="alloc-seg alloc-exp" id="alloc-exp"></div><div class="alloc-seg alloc-inv" id="alloc-inv"></div><div class="alloc-seg alloc-sav" id="alloc-sav"></div></div>
       <div class="alloc-legend" id="alloc-legend"></div>
-      <div class="alloc-sr">Savings rate <span class="metric-value" id="ov-sr" style="font-size:16px;">—</span> <span id="ov-sr-mom" style="display:inline-block;"></span></div>
+      <div class="alloc-sr">Kept rate <span class="muted" style="font-size:11px;">(invested + saved)</span> <span class="metric-value" id="ov-sr" style="font-size:16px;">—</span> <span id="ov-sr-mom" style="display:inline-block;"></span></div>
     </div>
   </div>
   <div class="card" id="coach-mini-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><div class="card-title" style="margin:0;">Coach</div><button class="btn-sm" onclick="goFeedback()">Full feedback</button></div><div id="coach-mini"></div></div>
@@ -665,8 +665,8 @@
       <input type="range" min="1000" max="20000" step="500" value="5000" id="sl-income" oninput="syncInput('sl-income','sl-income-val');updateFreedom()">
     </div>
     <div class="slider-block">
-      <div class="slider-header"><span class="slider-label">Your age today</span><input class="slider-input" id="sl-age-val" type="number" inputmode="numeric" value="35" oninput="syncSlider('sl-age','sl-age-val');updateFreedom()"></div>
-      <input type="range" min="20" max="65" step="1" value="35" id="sl-age" oninput="syncInput('sl-age','sl-age-val');updateFreedom()">
+      <div class="slider-header"><span class="slider-label">Your age today</span><input class="slider-input" id="sl-age-val" type="number" inputmode="numeric" value="33" oninput="syncSlider('sl-age','sl-age-val');updateFreedom()"></div>
+      <input type="range" min="20" max="65" step="1" value="33" id="sl-age" oninput="syncInput('sl-age','sl-age-val');updateFreedom()">
     </div>
     <div class="slider-block">
       <div class="slider-header"><span class="slider-label">Life expectancy (age)</span><input class="slider-input" id="sl-life-val" type="number" inputmode="numeric" value="90" oninput="syncSlider('sl-life','sl-life-val');updateFreedom()"></div>
@@ -860,9 +860,10 @@
       <div class="modal-title">Edit entry</div>
       <button class="modal-close" onclick="closeEditTx()">×</button>
     </div>
-    <div class="toggle-row">
-      <button class="toggle-btn expense" id="edit-tx-expense-btn" onclick="setEditType('expense')">Expense</button>
-      <button class="toggle-btn income" id="edit-tx-income-btn" onclick="setEditType('income')">Income</button>
+    <div class="toggle-row" id="edit-kind">
+      <button class="toggle-btn expense" data-kind="expense" onclick="setEditKind('expense')">Expense</button>
+      <button class="toggle-btn invest" data-kind="invest" onclick="setEditKind('invest')">Investment</button>
+      <button class="toggle-btn income" data-kind="income" onclick="setEditKind('income')">Income</button>
     </div>
     <label>Amount</label>
     <div class="amount-row">
@@ -874,14 +875,7 @@
     <div class="row">
       <div>
         <label>Category</label>
-        <select id="edit-tx-cat">
-          <optgroup label="Essentials"><option>Housing</option><option>Utilities</option><option>Telecom</option><option>Groceries</option><option>Transport</option><option>Health</option><option>Pet</option><option>Baby</option><option>Sobha bills &amp; fees</option></optgroup>
-        <optgroup label="Family"><option>Aurora fund</option></optgroup>
-        <optgroup label="Lifestyle"><option>Dining Out</option><option>Travel</option><option>Entertainment</option><option>Shopping</option><option>Personal Care</option></optgroup>
-        <optgroup label="Investing"><option>IBKR</option><option value="Sobha">Sobha installment</option><option>Crypto</option></optgroup>
-        <optgroup label="Income"><option>Salary</option><option>Bonus</option><option>Side income</option><option>Refund</option></optgroup>
-          <optgroup label="One-offs"><option>Instalments</option><option>Gift</option><option>Education</option><option>Other</option></optgroup>
-        </select>
+        <select id="edit-tx-cat"></select>
       </div>
       <div><label>Date</label><input id="edit-tx-date" type="date"></div>
     </div>
@@ -1222,6 +1216,7 @@ let transactions=JSON.parse(localStorage.getItem('fos_tx')||'null')||SEED_TX;
 // Any other Sobha amount is a bill or fee. Trade Republic entries for Aurora move to "Aurora fund" (an expense).
 let _migrationNote='';
 (function migrateCategoriesV1(){
+  try{
   if(localStorage.getItem('fos_cat_migr_v1'))return;
   let sobha=0,aurora=0,split=0;const extra=[];
   const maxId=transactions.reduce((m,t)=>Math.max(m,+t.id||0),Date.now());
@@ -1251,20 +1246,51 @@ let _migrationNote='';
   if(split)parts.push('split '+split+' combined Sobha payment'+(split>1?'s':'')+' into installment and fees');
   if(aurora)parts.push('moved '+aurora+' Aurora entr'+(aurora>1?'ies':'y')+' to Aurora fund');
   if(parts.length)_migrationNote='One-time cleanup: '+parts.join('; ')+'.';
+  }catch(e){console.error('migrateCategoriesV1',e);}
 })();
 (function migrateCategoriesV2(){
+  try{
   if(localStorage.getItem('fos_cat_migr_v2'))return;
-  let ib=0,inst=0;
-  const dev=/(iphone|i-phone|laptop|macbook|mac\s*book|apple\s*watch|ipad|airpods)/i;
+  let ib=0;
   transactions.forEach(tx=>{
     if(tx.cat==='Savings'&&/ibkr|interactive|vwce|\betf\b|broker|depot/i.test(tx.desc||'')){tx.cat='IBKR';ib++;}
-    const d=tx.desc||'';
-    if(tx.cat==='Shopping'&&dev.test(d)&&(/\d+\s*\/\s*\d+/.test(d)||/\s\d{1,2}\s*$/.test(d)||/pay\s*off|paid\s*off|payoff|remaining|final|instal|\brate\b|klarna|financ/i.test(d))){tx.cat='Instalments';inst++;}
   });
   localStorage.setItem('fos_tx',JSON.stringify(transactions));
   localStorage.setItem('fos_cat_migr_v2','1');
-  const p=[];if(ib)p.push('moved '+ib+' IBKR entr'+(ib>1?'ies':'y')+' from Savings to IBKR');if(inst)p.push('moved '+inst+' device instalment'+(inst>1?'s':'')+' from Shopping to Instalments');
+  const p=[];if(ib)p.push('moved '+ib+' IBKR entr'+(ib>1?'ies':'y')+' from Savings to IBKR');
   if(p.length)_migrationNote=_migrationNote?_migrationNote.replace(/\.$/,'; '+p.join('; ')+'.'):'One-time cleanup: '+p.join('; ')+'.';
+  }catch(e){console.error('migrateCategoriesV2',e);}
+})();
+(function migrateCategoriesV3(){
+  try{
+  if(localStorage.getItem('fos_cat_migr_v3'))return;
+  let back=0,split=0,fees=0,named=0;const extra=[];
+  const maxId=transactions.reduce((m,t)=>Math.max(m,+t.id||0),Date.now());
+  const billRe=/sobha|service\s*charge|chilled\s*water|smart\s*bill|title\s*deed/i;
+  transactions.forEach(tx=>{
+    if(tx.cat==='Instalments'){tx.cat='Shopping';back++;return;}
+    if(tx.type==='income'||tx.amort)return;
+    if(tx.cat==='Sobha'){
+      // Investment is exactly EUR 1,500 per installment. Anything above it is a Sobha bill or fee.
+      const k=Math.floor((tx.amount+0.5)/1500);
+      if(k>=1){
+        const rem=Math.round((tx.amount-k*1500)*100)/100;
+        if(rem>=0.5){const r=k*1500/tx.amount;extra.push({...tx,id:maxId+1+extra.length,amount:rem,amountOriginal:tx.amountOriginal!=null?Math.round(tx.amountOriginal*(1-r)*100)/100:rem,desc:(tx.desc||'Sobha')+' (bills part)',cat:'Sobha bills & fees'});if(tx.amountOriginal!=null)tx.amountOriginal=Math.round(tx.amountOriginal*r*100)/100;tx.amount=k*1500;split++;}
+      } else if(tx.amount<1455){tx.cat='Sobha bills & fees';fees++;}
+      return;
+    }
+    if(!['IBKR','Sobha','Crypto'].includes(tx.cat)&&tx.cat!=='Sobha bills & fees'&&billRe.test(tx.desc||'')){tx.cat='Sobha bills & fees';named++;}
+  });
+  extra.forEach(t=>transactions.push(t));
+  localStorage.setItem('fos_tx',JSON.stringify(transactions));
+  localStorage.setItem('fos_cat_migr_v3','1');
+  const p=[];
+  if(back)p.push('moved '+back+' device entr'+(back>1?'ies':'y')+' back to Shopping');
+  if(split)p.push('split '+split+' Sobha payment'+(split>1?'s':'')+' into the EUR 1,500 installment and bills');
+  if(fees)p.push('moved '+fees+' Sobha payment'+(fees>1?'s':'')+' below EUR 1,500 to Sobha bills & fees');
+  if(named)p.push('moved '+named+' Sobha bill'+(named>1?'s':'')+' from other categories to Sobha bills & fees');
+  if(p.length)_migrationNote=_migrationNote?_migrationNote.replace(/\.$/,'; '+p.join('; ')+'.'):'One-time cleanup: '+p.join('; ')+'.';
+  }catch(e){console.error('migrateCategoriesV3',e);}
 })();
 let wealth=JSON.parse(localStorage.getItem('fos_wealth')||'{"broker":0,"cryptoLive":0}');
 let flat=JSON.parse(localStorage.getItem('fos_flat')||'null')||{purchaseAED:0,handoverDate:'',appreciation:0,ownership:100};
@@ -1434,27 +1460,38 @@ function updateFXDisplay(){
 }
 
 // ── Log ────────────────────────────────────────────────────────────
-function setType(t,btn){txType=t;document.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');syncAmortRow();}
+// Three kinds of entry. Investing entries are stored with type 'expense'; their category makes them investing.
+const CAT_GROUPS={
+  expense:[['Essentials',['Housing','Utilities','Telecom','Groceries','Transport','Health','Pet','Baby','Sobha bills & fees']],['Family',['Aurora fund']],['Lifestyle',['Dining Out','Travel','Entertainment','Shopping','Personal Care']],['One-offs',['Gift','Education','Other']]],
+  invest:[['Investing',['IBKR','Sobha','Crypto']]],
+  income:[['Income',['Salary','Bonus','Side income','Refund']]]
+};
+const KIND_HINT={expense:'Counts in Expenses',invest:'Counts in Investing, not in Expenses',income:'Counts in Income'};
+function kindOf(tx){return tx.type==='income'?'income':INVEST_CATEGORIES.has(tx.cat)?'invest':'expense';}
+const _attr=v=>String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+function catOptionsHtml(kind,selected){
+  let found=false;
+  const html=CAT_GROUPS[kind].map(([g,cs])=>`<optgroup label="${g}">`+cs.map(c=>{const sel=c===selected;if(sel)found=true;return `<option value="${_attr(c)}"${sel?' selected':''}>${_attr(catLabel(c))}</option>`;}).join('')+'</optgroup>').join('');
+  return html+(selected&&!found?`<optgroup label="Current"><option value="${_attr(selected)}" selected>${_attr(selected)}</option></optgroup>`:'');
+}
+let txKind='expense';
+function setKind(kind){
+  txKind=kind;txType=kind==='income'?'income':'expense';
+  document.querySelectorAll('#log-kind .toggle-btn').forEach(b=>b.classList.toggle('active',b.dataset.kind===kind));
+  const sel=document.getElementById('tx-cat');if(sel)sel.innerHTML=catOptionsHtml(kind,null);
+  const h=document.getElementById('log-kind-hint');if(h){h.textContent=KIND_HINT[kind];h.className='kind-hint k-'+kind;}
+  syncAmortRow();
+}
+function setType(t){setKind(t==='income'?'income':'expense');}
 function syncAmortRow(){
   const row=document.querySelector('.amort-check-row');if(!row)return;
-  const inc=txType==='income';row.style.display=inc?'none':'';
-  if(inc){const c=document.getElementById('amort-check');if(c&&c.checked){c.checked=false;toggleAmort();}}
+  const off=txKind!=='expense';row.style.display=off?'none':'';
+  if(off){const c=document.getElementById('amort-check');if(c&&c.checked){c.checked=false;toggleAmort();}}
 }
 
 // Auto-assign expense/income type based on chosen category
 const INCOME_CATEGORIES=new Set(['Salary','Bonus','Side income','Refund']);
-function onCategoryChange(cat){
-  const newType=INCOME_CATEGORIES.has(cat)?'income':'expense';
-  if(newType===txType)return; // no change needed
-  txType=newType;syncAmortRow();
-  // Sync the visual toggle buttons
-  document.querySelectorAll('.toggle-btn').forEach(b=>{
-    b.classList.remove('active');
-    if((newType==='income'&&b.classList.contains('income'))||(newType==='expense'&&b.classList.contains('expense'))){
-      b.classList.add('active');
-    }
-  });
-}
+function onCategoryChange(cat){txType=INCOME_CATEGORIES.has(cat)?'income':'expense';}
 function toggleAmort(){document.getElementById('amort-extra').classList.toggle('visible',document.getElementById('amort-check').checked);}
 function logTransaction(){
   const amount=parseFloat(document.getElementById('tx-amount').value);
@@ -1492,14 +1529,11 @@ function openEditTx(id){
   document.getElementById('edit-tx-amount').value=tx.amountOriginal||tx.amount;
   document.getElementById('edit-tx-cur').value=tx.currencyOriginal||'EUR';
   document.getElementById('edit-tx-desc').value=tx.desc||'';
-  document.getElementById('edit-tx-cat').value=tx.cat;
+  setEditKind(kindOf(tx),tx.cat);
   document.getElementById('edit-tx-date').value=tx.date;
   document.getElementById('edit-amort-check').checked=!!tx.amort;
   document.getElementById('edit-amort-extra').classList.toggle('visible',!!tx.amort);
   document.getElementById('edit-amort-months').value=tx.amort?tx.months:'';
-  // Set type toggle visual
-  document.getElementById('edit-tx-expense-btn').classList.toggle('active',tx.type==='expense');
-  document.getElementById('edit-tx-income-btn').classList.toggle('active',tx.type==='income');
   // Show modal
   document.getElementById('edit-tx-overlay').classList.add('visible');
 }
@@ -1509,11 +1543,13 @@ function closeEditTx(){
   editingTxId=null;
 }
 
-function setEditType(t){
-  editTxType=t;
-  document.getElementById('edit-tx-expense-btn').classList.toggle('active',t==='expense');
-  document.getElementById('edit-tx-income-btn').classList.toggle('active',t==='income');
+let editKind='expense';
+function setEditKind(kind,selected){
+  editKind=kind;editTxType=kind==='income'?'income':'expense';
+  document.querySelectorAll('#edit-kind .toggle-btn').forEach(b=>b.classList.toggle('active',b.dataset.kind===kind));
+  document.getElementById('edit-tx-cat').innerHTML=catOptionsHtml(kind,selected||null);
 }
+function setEditType(t){setEditKind(t==='income'?'income':'expense');}
 
 function saveEditTx(){
   if(editingTxId===null)return;
@@ -1672,7 +1708,8 @@ function renderOverview(){
   const srEl=document.getElementById('ov-sr');
   srEl.textContent=sr!==null?Math.round(sr)+'%':'—';
   srEl.className='metric-value '+(sr===null?'':sr>=20?'green':sr>=0?'amber':'red');
-  document.getElementById('ov-sr-mom').innerHTML=(sr!==null&&prevSr!==null)?deltaLabel(sr,prevSr,true,'pp'):'';
+  const pName=new Date(prevY,prevM,1).toLocaleString('default',{month:'short'});
+  document.getElementById('ov-sr-mom').innerHTML=(sr!==null&&prevSr!==null)?`<span class="mom mom-flat" style="display:inline;">${pName}${isCurrentMonth?' same day':''}: ${Math.round(prevSr)}%</span>`:'';
   const cols=['#1db954','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#a3a3a3'];
   function bars(obj,emptyMsg){
     const sorted=Object.entries(obj).sort((a,b)=>b[1]-a[1]);
@@ -1743,7 +1780,7 @@ function renderOverview(){
         slice=`<div class="slice-note">Slice ${k} of ${tx.months} · total ${fmt(tx.amount)} · logged ${d.toLocaleDateString('default',{day:'numeric',month:'short',year:'numeric'})}</div>`;
       }
       return`<div class="tx-item" onclick="openEditTx(${tx.id})">
-        <div class="tx-top"><div class="tx-name">${tx.cat}${spread}</div><div class="tx-amount ${tx.type==='income'?'green':'red'}">${tx.type==='income'?'+':'-'}${fmt(dispAmt)}</div></div>
+        <div class="tx-top"><div class="tx-name">${esc(catLabel(tx.cat))}<span class="kind-tag kind-${kindOf(tx)}">${{expense:'Expense',invest:'Investment',income:'Income'}[kindOf(tx)]}</span>${spread}</div><div class="tx-amount ${{expense:'red',invest:'inv',income:'green'}[kindOf(tx)]}">${tx.type==='income'?'+':'-'}${fmt(dispAmt)}</div></div>
         ${tx.desc?`<div class="tx-desc">${tx.desc}</div>`:''}
         ${slice}
         ${origCur?`<div style="margin-top:3px"><div class="tx-meta">${origCur}</div></div>`:''}
@@ -1792,7 +1829,7 @@ function priorAverage(n,maxDay){
 // ── Buckets, budgets, actions ─────────────────────────────────────
 const CAT_LABELS={'Sobha':'Sobha installment'};
 function catLabel(c){return CAT_LABELS[c]||c;}
-const EXPENSE_CATS=['Housing','Utilities','Telecom','Groceries','Transport','Health','Pet','Baby','Sobha bills & fees','Aurora fund','Instalments','Dining Out','Travel','Entertainment','Shopping','Personal Care','Gift','Education','Other'];
+const EXPENSE_CATS=['Housing','Utilities','Telecom','Groceries','Transport','Health','Pet','Baby','Sobha bills & fees','Aurora fund','Dining Out','Travel','Entertainment','Shopping','Personal Care','Gift','Education','Other'];
 // Variable spend you can steer month to month. Fixed costs and Aurora's fund are excluded from cut advice.
 const DISCRETIONARY=new Set(['Groceries','Transport','Dining Out','Travel','Entertainment','Shopping','Personal Care','Gift','Education','Other']);
 const CAT_TIPS={
@@ -1840,7 +1877,8 @@ function renderAlloc(income,spent,invested,left,prev,isCur,invCats){
   set('alloc-exp',pE/tot*100);set('alloc-inv',pI/tot*100);set('alloc-sav',Math.max(0,pS)/tot*100);
   const okE=pE<=tg.exp+0.5,okI=pI>=tg.inv-0.5,okS=pS>=0&&(pS>=tg.sav-0.5||pI+pS>=tg.inv+tg.sav-0.5);
   const pp=prev&&prev.income>0?{e:prev.spent/prev.income*100,i:prev.invested/prev.income*100,s:(prev.income-prev.spent-prev.invested)/prev.income*100}:null;
-  const mom=(v,pv,goodUp)=>{if(pv==null)return '';const d=Math.round(v-pv);if(d===0)return '<span class="alloc-mom mom-flat">= last month</span>';return `<span class="alloc-mom ${(d>0)===goodUp?'mom-good':'mom-bad'}">${d>0?'↑ +':'↓ '}${d} pp</span>`;};
+  const pn=new Date(viewYear,viewMonth-1,1).toLocaleString('default',{month:'short'});
+  const mom=(v,pv)=>pv==null?'':`<span class="alloc-mom mom-flat">${pn}: ${Math.round(pv)}%</span>`;
   const cell=(name,p,tgt,ok,m)=>`<div>${name}<b>${Math.round(p)}%</b><span class="tgt ${ok?'ok':'off'}">${ok?'✓ ':''}target ${tgt}</span>${m}</div>`;
   const pd=!okI?ibkrPending(isCur,invCats):null;const pendI=pd?'<span class="alloc-mom mom-flat">IBKR due ~day '+pd+'</span>':'';
   leg.innerHTML=cell('Expenses',pE,'≤'+tg.exp+'%',okE,mom(pE,pp&&pp.e,false))+cell('Investing',pI,'≥'+tg.inv+'%',okI,pendI||mom(pI,pp&&pp.i,true))+cell('Saved',pS,tg.sav+'%',okS,mom(pS,pp&&pp.s,true));
@@ -1892,7 +1930,7 @@ function fiMonths(extra,fromMonth){
   extra=extra||0;fromMonth=fromMonth||0;
   let f={};try{f=JSON.parse(localStorage.getItem('fos_freedom')||'{}')||{};}catch(e){}
   let ph=[];try{ph=(JSON.parse(localStorage.getItem('fos_phases')||'null')||[]).slice().sort((a,b)=>a.startYear-b.startYear);}catch(e){}
-  const income=f.income||5000,age=f.age||35,life=f.lifeExp||90;
+  const income=f.income||5000,age=f.age||33,life=f.lifeExp||90;
   const nominal=(f.nominal!=null?f.nominal:7)/100,infl=f.inflOn?((f.inflation!=null?f.inflation:2.8)/100):0;
   const rM=Math.pow((1+nominal)/(1+infl),1/12)-1;
   const sm=n=>n<=30?25:n>=50?31:25+(n-30)/20*6;
@@ -2048,7 +2086,7 @@ function buildCoach(ctx){
     else if(!isCur)watch.push({t:`Investing ${Math.round(pI)}% of income vs your ${tg.inv}% target: ${fmt0(cur.income*tg.inv/100-cur.invested)} short.`,v:cur.income*tg.inv/100-cur.invested});
     if(pE>tg.exp+0.5&&!early)watch.push({t:`Expenses take <b>${Math.round(pE)}%</b> of income vs your ${tg.exp}% ceiling: ${fmt0(cur.spent-cur.income*tg.exp/100)} over the line.`,v:cur.spent-cur.income*tg.exp/100});
     if(ctx.left<-0.5&&!isCur)watch.push({t:`This month spent and invested more than it earned: <b>${fmt0(-ctx.left)}</b> came out of cash. Fine once; not as a pattern.`,v:-ctx.left});
-    else if(sr>=50&&!early)wins.push({t:`Savings rate <b>${Math.round(sr)}%</b>: you keep more than half of what you earn.`,v:0});
+    else if(sr>=50&&!early)wins.push({t:`Kept rate <b>${Math.round(sr)}%</b> (invested + saved): more than half of what you earn stays yours.`,v:0});
   }
   // Category moves vs usual (variable spend only)
   const bud=getBudgets();
@@ -2098,8 +2136,6 @@ function buildCoach(ctx){
   }
   // Instalments: cleared or still scheduled
   const sched=scheduledSeries();
-  const instRecent=[0,1,2].some(k=>{let m=viewMonth-k,y=viewYear;while(m<0){m+=12;y--;}return (getMonthData(m,y).cats['Instalments']||0)>0;});
-  if(instRecent&&!sched.length)wins.push({t:`Device instalments look cleared. Whatever you paid monthly is now free: raise your IBKR order by that amount before everyday spending absorbs it.`,v:0});
   // Next moves: biggest lever, cash routing, plan switches
   const lever=watch.filter(w=>w.c&&w.habit&&w.v>=30).sort((a,b)=>b.v-a.v)[0];
   if(lever){
@@ -2207,19 +2243,18 @@ function targetsHtml(ctx){
   ];
   const html=rows.map(r=>{
     const v=c[r.k],ok=r.ok(v);const pend=r.k==='inv'&&!ok?ibkrPending(ctx.isCur,ctx.cur.invCats):null;
-    let mom='';
-    if(p){const d=Math.round(v-p[r.k]);mom=d===0?`<span class="mom-flat">= ${ctx.prevName}</span>`:`<span class="${(d*r.good>0)?'mom-good':'mom-bad'}">${d>0?'↑ +':'↓ '}${d} pp vs ${ctx.prevName}</span>`;}
-    const av=a?` · 3-mo avg ${Math.round(a[r.k])}%`:'';
+    const mom=p?`· ${ctx.prevName} ${Math.round(p[r.k])}%`:'';
+    const av=a?` · 3-month avg ${Math.round(a[r.k])}%`:'';
     const w=Math.max(0,Math.min(100,v));
     return `<div class="tg-row"><div class="tg-top"><span class="tg-name">${r.name}</span><span class="tg-val"><b>${Math.round(v)}%</b> <span class="muted">${fmt0(c['e'+r.k[0].toUpperCase()+r.k.slice(1)])}</span></span></div>
       <div class="tg-bar"><div class="tg-fill" style="width:${w}%;background:${r.col}"></div><div class="tg-mark" style="left:calc(${Math.min(100,r.t)}% - 1px)"></div></div>
-      <div class="tg-sub"><span class="${ok?'ok':pend?'':'off'}">${ok?'✓ on target':pend?'IBKR usually lands around day '+pend:'off target'} (${r.tgt})</span> ${mom}${av}</div></div>`;
+      <div class="tg-sub"><span class="${ok?'ok':pend?'':'off'}">${ok?'✓ on target ('+r.tgt+')':pend?'target '+r.tgt+', IBKR usually lands around day '+pend:'off target ('+r.tgt+')'}</span> ${mom}${av}</div></div>`;
   }).join('');
   const sr=(ctx.cur.income-ctx.cur.spent)/ctx.cur.income*100;
   const srP=ctx.prev.income>0?(ctx.prev.income-ctx.prev.spent)/ctx.prev.income*100:null;
-  const srD=srP===null?'':` <span class="${sr>=srP?'mom-good':'mom-bad'}">${Math.round(sr-srP)>=0?'+':''}${Math.round(sr-srP)} pp vs ${ctx.prevName}</span>`;
-  const scope=ctx.isCur?`<div class="coach-note">Month to date (day ${ctx.day}); last month compared at the same day.</div>`:'';
-  return html+`<div class="tg-sr">Savings rate (investing + cash) <b>${Math.round(sr)}%</b>${srD}</div>`+scope;
+  const srD=srP===null?'':` <span class="muted">· ${ctx.prevName} ${Math.round(srP)}%</span>`;
+  const how=`<div class="coach-note">How to read: each % is a share of the month's income. ${ctx.prevName} shows last month${ctx.isCur?` up to day ${ctx.day}, so both months cover the same days`:''}. 3-month avg covers the three months before.</div>`;
+  return html+`<div class="tg-sr">Kept rate <span class="muted">(invested + saved)</span> <b>${Math.round(sr)}%</b>${srD}</div>`+how;
 }
 
 function investHtml(ctx){
@@ -2258,7 +2293,8 @@ function claudeNotesHtml(){
 function renderFeedbackMeta(){
   const el=document.getElementById('fb-meta');if(!el)return;
   const le=localStorage.getItem('fos_last_export'),li=localStorage.getItem('fos_last_import');
-  el.innerHTML=[le?'Last export '+new Date(le).toLocaleDateString('default',{day:'numeric',month:'short'}):'Not exported yet',li?'last import '+new Date(li).toLocaleDateString('default',{day:'numeric',month:'short'}):''].filter(Boolean).join(' · ')+'. The export doubles as your backup.';
+  const sm=localStorage.getItem('fos_last_import_summary');
+  el.innerHTML=(sm?esc(sm)+'<br>':'')+[le?'Last export '+new Date(le).toLocaleDateString('default',{day:'numeric',month:'short'}):'Not exported yet',li?'last import '+new Date(li).toLocaleDateString('default',{day:'numeric',month:'short'}):''].filter(Boolean).join(' · ')+'. The export doubles as your backup.';
 }
 function renderFeedback(){
   const ctx=monthCtx();
@@ -2364,8 +2400,25 @@ function applyFlatUpdate(f){
 }
 function applyClaudeFile(j,btn){
   if(j.for&&j.for!==APP_ID&&!confirm(`This file was made for the ${j.for} app. Import it here anyway?`)){btnFail(btn,'Cancelled');return;}
-  const done=[];
-  if(j.ibkr&&Array.isArray(j.ibkr.positions)&&j.ibkr.positions.length){applyIbkrSnapshot(j.ibkr);done.push(j.ibkr.positions.length+' positions');}
+  const done=[],kept=[];
+  if(j.ibkr&&Array.isArray(j.ibkr.positions)&&j.ibkr.positions.length){
+    const ts=Date.parse(j.ibkr.asOf)||0;
+    if(positions.length&&posUpdatedTimestamp>ts)kept.push('portfolio (phone has newer data)');
+    else{applyIbkrSnapshot(j.ibkr);done.push(j.ibkr.positions.length+' positions');}
+  }
+  if(j.crypto&&j.crypto.holdings&&typeof j.crypto.holdings==='object'){
+    const has=Object.values(cryptoHoldings||{}).some(a=>Array.isArray(a)&&a.length);
+    if(!has||confirm('Replace the crypto holdings on this phone with the ones in this file?')){
+      const h={};Object.entries(j.crypto.holdings).forEach(([ex,arr])=>{if(Array.isArray(arr))h[String(ex)]=arr.filter(c=>c&&c.symbol).map(c=>({symbol:String(c.symbol),qty:+c.qty||0}));});
+      cryptoHoldings=h;localStorage.setItem('fos_crypto',JSON.stringify(cryptoHoldings));done.push('crypto');
+      try{renderCryptoExchanges();refreshCryptoPrices().catch(()=>{});}catch(e){}
+    } else kept.push('crypto');
+  }
+  if(Array.isArray(j.cash)&&j.cash.length){
+    if(!cashAccounts.some(c=>+c.amount>0)){cashAccounts=j.cash.map(c=>({bank:String(c.bank||'Account'),currency:c.currency||'EUR',amount:+c.amount||0}));localStorage.setItem('fos_cash',JSON.stringify(cashAccounts));done.push('bank cash');try{renderCashAccounts();}catch(e){}}
+    else kept.push('bank cash (phone has balances)');
+  }
+  if(Array.isArray(j.phasesIfMissing)&&j.phasesIfMissing.length&&!localStorage.getItem('fos_phases')){phases=j.phasesIfMissing;localStorage.setItem('fos_phases',JSON.stringify(phases));done.push('freedom phases');}
   if(j.flat){applyFlatUpdate(j.flat);done.push('flat value');}
   if(j.notes){
     let notes=[];try{notes=JSON.parse(localStorage.getItem('fos_claude_notes')||'[]')||[];}catch(e){}
@@ -2376,7 +2429,9 @@ function applyClaudeFile(j,btn){
     done.push('review');
   }
   localStorage.setItem('fos_last_import',new Date().toISOString());
-  btnDone(btn,done.length?'Imported '+done.join(', '):'Nothing to import');
+  localStorage.setItem('fos_last_import_summary',(done.length?'Imported: '+done.join(', ')+'.':'Nothing new imported.')+(kept.length?' Kept on phone: '+kept.join(', ')+'.':''));
+  btnDone(btn,done.length?'Imported':'Nothing new');
+  flash(done.length?'Imported: '+done.join(', '):'Nothing new imported');
   renderFeedback();
 }
 function clearData(){
@@ -2776,8 +2831,8 @@ function renderWealth(){
   else if(flat.purchaseAED>0)renderFlatSummaryOnly();
   // Crypto: render exchanges, fetch prices if stale
   renderCryptoExchanges();
-  const stale=!cryptoFetchedAt||(Date.now()-new Date(cryptoFetchedAt).getTime())>86400000;
-  if(stale)refreshCryptoPrices();
+  const stale=!cryptoFetchedAt||(Date.now()-new Date(cryptoFetchedAt).getTime())>15*60000;
+  if(stale&&Object.values(cryptoHoldings||{}).some(a=>a&&a.length))refreshCryptoPrices();
   else updateCryptoDisplay();
 }
 
@@ -3021,7 +3076,7 @@ function renderCryptoExchanges(){
       ${coinRows}
     </div>`;
   }).join('');
-  container.innerHTML=html||'<div class="empty">No crypto holdings</div>';
+  container.innerHTML=html||'<div class="empty">No crypto holdings on this phone yet. Import your Claude file (Feedback tab) or tap Edit holdings.</div>';
 }
 
 function toggleManualCrypto(){
@@ -3510,7 +3565,7 @@ async function getInsight(btn){
   const ents=monthEntries(ctx).sort((a,b)=>b.amount-a.amount).slice(0,25).map(t=>`${t.date} | ${t.cat} | ${Math.round(t.amount)} | ${(t.desc||'').slice(0,40)}`).join('\n');
   const cats=Object.entries(ctx.cur.cats).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`${c}: ${Math.round(v)} (usual ${Math.round(ctx.avg.cats[c]||0)})`).join('; ');
   const tg=getAllocTargets();
-  const brief=`Month: ${ctx.name}${ctx.isCur?` (day ${ctx.day} of ${ctx.dim}, compare at same day)`:''}. Income ${Math.round(ctx.cur.income)} EUR. Expenses ${Math.round(ctx.cur.spent)}, investing ${Math.round(ctx.cur.invested)}, cash saved ${Math.round(ctx.left)}. Targets: expenses <=${tg.exp}%, investing >=${tg.inv}%, saved ${tg.sav}%. Prior ${ctx.avg.months}-month average expenses ${Math.round(ctx.avg.spent)}. Categories: ${cats}. Fixed and not to be cut: Housing, Utilities, Health, Sobha bills & fees, Aurora fund (money set aside for a child), Instalments. Entries (date | category | EUR | description):\n${ents}`;
+  const brief=`Month: ${ctx.name}${ctx.isCur?` (day ${ctx.day} of ${ctx.dim}, compare at same day)`:''}. Income ${Math.round(ctx.cur.income)} EUR. Expenses ${Math.round(ctx.cur.spent)}, investing ${Math.round(ctx.cur.invested)}, cash saved ${Math.round(ctx.left)}. Kept rate means invested plus saved as a share of income. Targets: expenses <=${tg.exp}%, investing >=${tg.inv}%, saved ${tg.sav}%. Prior ${ctx.avg.months}-month average expenses ${Math.round(ctx.avg.spent)}. Categories: ${cats}. Fixed and not to be cut: Housing, Utilities, Health, Sobha bills & fees, Aurora fund (money set aside for a child). Shopping includes technology bought in instalments. Entries (date | category | EUR | description):\n${ents}`;
   const area=document.getElementById('insight-area');
   if(btn)btnLoading(btn,'Claude is reading your month');
   try{
@@ -3594,8 +3649,14 @@ restoreFreedomPrefs();
 updateFreedom();
 updateFXDisplay();
 applyPrivateMode();
-const stale=!fxFetchedAt||(Date.now()-new Date(fxFetchedAt).getTime())>86400000;
-if(stale)fetchLiveFX();
+setKind('expense');
+// Keep net worth current: FX hourly, crypto every 15 minutes, on open and on return to the app.
+function refreshMarketData(){
+  const old=(ts,min)=>!ts||Date.now()-new Date(ts).getTime()>min*60000;
+  try{if(old(fxFetchedAt,60))fetchLiveFX();}catch(e){}
+  try{if(Object.values(cryptoHoldings||{}).some(a=>a&&a.length)&&old(cryptoFetchedAt,15))refreshCryptoPrices().catch(()=>{});}catch(e){}
+}
+refreshMarketData();
 
 // Lock on startup: show setup if no PIN, otherwise lock screen
 // Face ID requires user tap to trigger (iOS Safari WebAuthn restriction)
@@ -3617,6 +3678,7 @@ document.addEventListener('visibilitychange',()=>{
     if(pinIsSet()&&Date.now()-lastVisibleAt>60000){
       lockNow();
     }
+    refreshMarketData();
   }
 });
 </script>
