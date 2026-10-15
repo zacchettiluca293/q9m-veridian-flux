@@ -255,6 +255,7 @@
   .kind-tag{display:inline-block;font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:4px;margin-left:8px;vertical-align:2px;}
   .kind-expense{background:rgba(232,69,60,.14);color:var(--red);}.kind-invest{background:rgba(59,130,246,.16);color:var(--blue);}.kind-income{background:rgba(29,185,84,.16);color:var(--green);}
   .tx-amount.inv{color:var(--blue);}
+  .update-banner{position:fixed;left:16px;right:16px;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:9999;padding:14px;border:none;border-radius:12px;background:var(--green);color:#000;font-size:14px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.4);}
   .coach-h{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600;margin:14px 0 2px;}
   .coach-h:first-child{margin-top:0;}
   .coach-note{font-size:11px;color:var(--text3);line-height:1.5;margin-top:10px;}
@@ -817,6 +818,7 @@
     <button class="btn btn-secondary" style="margin-bottom:10px;" onclick="exportData(this)">Export backup</button>
     <button class="btn btn-secondary" style="margin-bottom:10px;" onclick="pickImport()">Restore from backup or import a Claude file</button>
     <p class="api-note" style="margin:0 0 10px;">Your data lives only on this phone. Export a backup once a month and keep it in Files or iCloud.</p>
+    <p class="api-note" style="margin:0 0 10px;">App version <b id="app-version"></b></p>
     <button class="btn btn-secondary" style="color:var(--red);" onclick="clearData()">Clear ALL data (destructive)</button>
   </div>
 </div>
@@ -895,6 +897,9 @@
 </div>
 
 <script>
+const APP_VERSION='2026-10-15 r4';
+// Sobha: exactly one installment per month counts as investing, capped at EUR 1,500. Everything else paid to Sobha is an expense (Sobha bills & fees).
+const SOBHA_CAP=1500,SOBHA_MIN=1455;
 const APP_ID='luca',RAW_NS='fos_';
 // ── Button feedback helpers ───────────────────────────────────────
 function _btnStore(b){if(b&&b.dataset.orig===undefined)b.dataset.orig=b.innerHTML;}
@@ -1292,6 +1297,32 @@ let _migrationNote='';
   if(p.length)_migrationNote=_migrationNote?_migrationNote.replace(/\.$/,'; '+p.join('; ')+'.'):'One-time cleanup: '+p.join('; ')+'.';
   }catch(e){console.error('migrateCategoriesV3',e);}
 })();
+// Per calendar month: the largest Sobha payment of at least EUR 1,455 is the installment, capped at EUR 1,500.
+// Any amount above the cap, and every other Sobha payment that month, moves to Sobha bills & fees. Totals never change.
+function normalizeSobha(){
+  const byMonth={};
+  transactions.forEach(tx=>{if(tx.cat==='Sobha'&&tx.type!=='income'&&!tx.amort&&tx.date){const k=String(tx.date).slice(0,7);(byMonth[k]=byMonth[k]||[]).push(tx);}});
+  let changed=0,maxId=transactions.reduce((m,t)=>Math.max(m,+t.id||0),Date.now());const extra=[];
+  Object.values(byMonth).forEach(list=>{
+    list.sort((a,b)=>b.amount-a.amount||String(a.date).localeCompare(String(b.date)));
+    list.forEach((tx,i)=>{
+      const isInst=i===0&&tx.amount>=SOBHA_MIN;
+      if(!isInst){tx.cat='Sobha bills & fees';changed++;return;}
+      const rest=Math.round((tx.amount-SOBHA_CAP)*100)/100;
+      if(rest<0.01)return;
+      const r=SOBHA_CAP/tx.amount;
+      extra.push({...tx,id:++maxId,amount:rest,amountOriginal:tx.amountOriginal!=null?Math.round(tx.amountOriginal*(1-r)*100)/100:rest,desc:(tx.desc||'Sobha')+' (bills part)',cat:'Sobha bills & fees'});
+      if(tx.amountOriginal!=null)tx.amountOriginal=Math.round(tx.amountOriginal*r*100)/100;
+      tx.amount=SOBHA_CAP;changed++;
+    });
+  });
+  extra.forEach(t=>transactions.push(t));
+  if(changed)localStorage.setItem('fos_tx',JSON.stringify(transactions));
+  return changed;
+}
+try{const n=normalizeSobha();if(n)_migrationNote=(_migrationNote?_migrationNote.replace(/\.$/,'; '):'One-time cleanup: ')+'Sobha capped at EUR 1,500 a month in '+n+' entr'+(n>1?'ies':'y')+', the rest moved to Sobha bills & fees.';}catch(e){console.error('normalizeSobha',e);}
+// Any stray Instalments entries (from an earlier version) go back to Shopping.
+try{let b=0;transactions.forEach(t=>{if(t.cat==='Instalments'){t.cat='Shopping';b++;}});if(b)localStorage.setItem('fos_tx',JSON.stringify(transactions));const bu=JSON.parse(localStorage.getItem('fos_budgets')||'{}');if(bu&&'Instalments' in bu){delete bu.Instalments;localStorage.setItem('fos_budgets',JSON.stringify(bu));}}catch(e){}
 let wealth=JSON.parse(localStorage.getItem('fos_wealth')||'{"broker":0,"cryptoLive":0}');
 let flat=JSON.parse(localStorage.getItem('fos_flat')||'null')||{purchaseAED:0,handoverDate:'',appreciation:0,ownership:100};
 // Schema 3: dated manual revaluations (imported from Claude files or added by hand), a no-growth period, then a benchmark rate.
@@ -1304,9 +1335,38 @@ if(flat.purchaseYear&&!flat.handoverDate){
 }
 let cashAccounts=JSON.parse(localStorage.getItem('fos_cash')||'null')||[{bank:'Main account',currency:'EUR',amount:0}];
 
-// Crypto holdings live on the phone only. Live prices fetched from CoinGecko.
-const SEED_CRYPTO={};
-let cryptoHoldings=JSON.parse(localStorage.getItem('fos_crypto')||'null')||SEED_CRYPTO;
+// Crypto holdings (from your screenshots, 10 May 2026). Saved to the phone on first load; edits in Wealth take over from then on.
+const SEED_CRYPTO={
+  Binance:[
+    {symbol:'BNB',qty:1.56415766},
+    {symbol:'BTC',qty:0.00202661},
+    {symbol:'ETH',qty:0.06918263}
+  ],
+  ByBit:[
+    {symbol:'BTC',qty:0.03866444},
+    {symbol:'MNT',qty:237.5},
+    {symbol:'SOL',qty:0.46292666},
+    {symbol:'NEAR',qty:15.029245},
+    {symbol:'ATOM',qty:8.341547},
+    {symbol:'XTZ',qty:32.36647},
+    {symbol:'ETH',qty:0.00461599}
+  ],
+  MetaMask:[
+    {symbol:'stETH',qty:1.10128},
+    {symbol:'ETH',qty:0.85463},
+    {symbol:'mUSD',qty:1}
+  ],
+  Phantom:[
+    {symbol:'SOL',qty:5.34141},
+    {symbol:'PSOL',qty:5.22839}
+  ]
+};
+let cryptoHoldings=JSON.parse(localStorage.getItem('fos_crypto')||'null');
+if(!cryptoHoldings||(!Object.values(cryptoHoldings).some(a=>Array.isArray(a)&&a.length)&&!localStorage.getItem('fos_crypto_seeded'))){
+  cryptoHoldings=JSON.parse(JSON.stringify(SEED_CRYPTO));
+  localStorage.setItem('fos_crypto',JSON.stringify(cryptoHoldings));
+}
+localStorage.setItem('fos_crypto_seeded','1');
 // Live prices cache, keyed by symbol -> {usd, eur, change24h}
 let cryptoPrices=JSON.parse(localStorage.getItem('fos_crypto_prices')||'{}');
 let cryptoFetchedAt=localStorage.getItem('fos_crypto_at')||null;
@@ -1491,7 +1551,11 @@ function syncAmortRow(){
 
 // Auto-assign expense/income type based on chosen category
 const INCOME_CATEGORIES=new Set(['Salary','Bonus','Side income','Refund']);
-function onCategoryChange(cat){txType=INCOME_CATEGORIES.has(cat)?'income':'expense';}
+function onCategoryChange(cat){
+  txType=INCOME_CATEGORIES.has(cat)?'income':'expense';
+  const h=document.getElementById('log-kind-hint');
+  if(h)h.textContent=cat==='Sobha'?'Counts in Investing up to €1,500 a month; any amount above goes to Sobha bills & fees':KIND_HINT[txKind];
+}
 function toggleAmort(){document.getElementById('amort-extra').classList.toggle('visible',document.getElementById('amort-check').checked);}
 function logTransaction(){
   const amount=parseFloat(document.getElementById('tx-amount').value);
@@ -1513,6 +1577,7 @@ function logTransaction(){
   document.getElementById('amort-check').checked=false;
   document.getElementById('amort-extra').classList.remove('visible');
   document.getElementById('tx-date').value=new Date().toISOString().split('T')[0];
+  if(cat==='Sobha'&&normalizeSobha()){flash('Saved: up to €1,500 as Sobha installment, the rest as Sobha bills & fees');return;}
   flash('Entry saved');
 }
 
@@ -1575,9 +1640,10 @@ function saveEditTx(){
     months:amort?months:1
   };
   localStorage.setItem('fos_tx',JSON.stringify(transactions));
+  const sob=normalizeSobha();
   closeEditTx();
   renderOverview();
-  flash('Entry updated');
+  flash(sob?'Updated: Sobha above €1,500 moved to Sobha bills & fees':'Entry updated');
 }
 
 function deleteEditTx(){
@@ -1598,7 +1664,7 @@ const CASH_TRANSFER_CATS=new Set(['Savings']);
 // Ignored everywhere: Kindergeld belongs to Aurora and is invested for her outside this app.
 const IGNORED_CATS=new Set(['Kindergeld']);
 function getMonthData(month,year,maxDay){
-  let income=0,spent=0,invested=0;const cats={},invCats={};
+  let income=0,spent=0,invested=0;const cats={},invCats={};const sob=[];
   transactions.forEach(tx=>{
     const d=new Date(tx.date);
     let eff=tx.amort?tx.amount/tx.months:tx.amount;
@@ -1613,9 +1679,16 @@ function getMonthData(month,year,maxDay){
     }
     if(IGNORED_CATS.has(tx.cat)||CASH_TRANSFER_CATS.has(tx.cat))return;
     if(tx.type==='income')income+=eff;
+    else if(tx.cat==='Sobha'&&!tx.amort)sob.push(eff);
     else if(INVEST_CATEGORIES.has(tx.cat)){invested+=eff;invCats[tx.cat]=(invCats[tx.cat]||0)+eff;}
     else{spent+=eff;cats[tx.cat]=(cats[tx.cat]||0)+eff;}
   });
+  if(sob.length){
+    sob.sort((a,b)=>b-a);let inv=0,bills=0;
+    sob.forEach((a,i)=>{if(i===0&&a>=SOBHA_MIN){inv=Math.min(a,SOBHA_CAP);bills+=a-inv;}else bills+=a;});
+    if(inv>0){invested+=inv;invCats.Sobha=(invCats.Sobha||0)+inv;}
+    if(bills>0.004){spent+=bills;cats['Sobha bills & fees']=(cats['Sobha bills & fees']||0)+bills;}
+  }
   return{income,spent,invested,cats,invCats};
 }
 
@@ -2266,7 +2339,7 @@ function investHtml(ctx){
   row('IBKR this month'+(sub?`<span class="fs-sub">${sub}</span>`:''),fmt0(ic.IBKR||0));
   if(ic.Sobha)row('Sobha installment',fmt0(ic.Sobha));
   if(ic.Crypto)row('Crypto',fmt0(ic.Crypto));
-  let ytd=0;const y=viewYear;transactions.forEach(tx=>{if(!INVEST_CATEGORIES.has(tx.cat)||tx.type==='income')return;const d=new Date(tx.date);if(d.getFullYear()===y&&d<=new Date())ytd+=tx.amount;});
+  let ytd=0;const y=viewYear,now=new Date();for(let m=0;m<12;m++){if(y>now.getFullYear()||(y===now.getFullYear()&&m>now.getMonth()))break;ytd+=getMonthData(m,y,(y===now.getFullYear()&&m===now.getMonth())?now.getDate():null).invested;}
   row('Invested '+y+' to date',fmt0(ytd));
   if(positions&&positions.length){
     const st=calcStats();
@@ -3650,6 +3723,22 @@ updateFreedom();
 updateFXDisplay();
 applyPrivateMode();
 setKind('expense');
+try{document.getElementById('app-version').textContent=APP_VERSION;}catch(e){}
+// GitHub Pages and home-screen apps can keep an old copy for a while. Compare with the published file and offer the update.
+async function checkForUpdate(){
+  if(!/^https?:/.test(location.protocol))return;
+  try{
+    const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
+    const m=(await r.text()).match(/const APP_VERSION='([^']+)'/);
+    if(m&&m[1]!==APP_VERSION){
+      let b=document.getElementById('update-banner');
+      if(!b){b=document.createElement('button');b.id='update-banner';b.className='update-banner';document.body.appendChild(b);}
+      b.textContent='New version '+m[1]+' ready. Tap to update';
+      b.onclick=()=>location.replace(location.pathname+'?v='+encodeURIComponent(m[1]));
+    }
+  }catch(e){}
+}
+checkForUpdate();
 // Keep net worth current: FX hourly, crypto every 15 minutes, on open and on return to the app.
 function refreshMarketData(){
   const old=(ts,min)=>!ts||Date.now()-new Date(ts).getTime()>min*60000;
@@ -3679,6 +3768,7 @@ document.addEventListener('visibilitychange',()=>{
       lockNow();
     }
     refreshMarketData();
+    checkForUpdate();
   }
 });
 </script>
