@@ -256,6 +256,20 @@
   .kind-expense{background:rgba(232,69,60,.14);color:var(--red);}.kind-invest{background:rgba(59,130,246,.16);color:var(--blue);}.kind-income{background:rgba(29,185,84,.16);color:var(--green);}
   .tx-amount.inv{color:var(--blue);}
   .update-banner{position:fixed;left:16px;right:16px;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:9999;padding:14px;border:none;border-radius:12px;background:var(--green);color:#000;font-size:14px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.4);}
+  .metric.tap{cursor:pointer;transition:border-color .15s,background .15s;}.metric.filter-on{border-color:var(--green);background:rgba(29,185,84,.08);}
+  .tile-split{font-size:11px;color:var(--text3);margin-top:6px;}.tile-split .tap{text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer;}
+  .bar-row.tap{cursor:pointer;border-radius:8px;}.bar-row.filter-on{background:rgba(29,185,84,.08);}
+  .cls-head{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);font-weight:600;margin:12px 0 4px;padding:4px 6px;border-radius:6px;cursor:pointer;}.cls-head:first-child{margin-top:0;}.cls-head b{color:var(--text);font-size:13px;letter-spacing:0;}.cls-head.filter-on{background:rgba(29,185,84,.1);color:var(--green);}
+  .entries-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:14px;}
+  .filter-chip{border:0.5px solid var(--green);background:rgba(29,185,84,.12);color:var(--green);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;}
+  .tg-subrow{padding:6px 0 8px 14px;border-bottom:none;}.tg-subrow .tg-name{font-size:13px;color:var(--text2);}.tg-subrow .tg-val b{font-size:14px;}.tg-subrow .tg-bar{height:5px;}
+  .budget-row .cls-pill,.cls-pill{display:inline-block;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.05em;padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:1px;}.budget-row .cls-pill{font-size:9px!important;flex:none!important;}.cls-essential{background:rgba(248,113,113,.15);color:#f87171;}.cls-lifestyle{background:rgba(251,146,60,.15);color:#fb923c;}
+  .ol-wrap{overflow-x:auto;margin:6px 0;}.ol{width:100%;border-collapse:collapse;font-size:12px;}.ol th{font-weight:600;color:var(--text2);text-align:right;padding:4px 4px 6px;}.ol td{padding:6px 4px;text-align:right;border-top:0.5px solid var(--border);vertical-align:top;}.ol td:first-child,.ol th:first-child{text-align:left;color:var(--text2);}.ol .muted{font-size:10px;}.ol-strong td{font-weight:600;}
+  .ol-verdict,.cush-verdict{font-size:13px;line-height:1.5;color:var(--text2);margin-bottom:8px;}.ol-verdict b,.cush-verdict b{color:var(--text);}.cush-verdict.good b{color:var(--green);}.cush-verdict.warn b{color:var(--amber);}
+  .mix-top{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px;}.mix-line{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--text2);}.mix-line b{color:var(--text);}
+  .plan-row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--border);font-size:13px;}.plan-del{display:block;margin-top:6px;margin-left:auto;color:var(--red);}.off-txt{color:var(--amber);font-size:12px;}
+  .plan-presets{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;}.plan-form{background:var(--bg3);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;}
+  .private-mode .tile-split,.private-mode .ol,.private-mode .ol-verdict b,.private-mode .cush-verdict b,.private-mode #fb-cushion .flat-stat-val,.private-mode .mix-line b,.private-mode .plan-row b,.private-mode .cls-head b{filter:blur(8px);user-select:none;}
   .coach-h{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600;margin:14px 0 2px;}
   .coach-h:first-child{margin-top:0;}
   .coach-note{font-size:11px;color:var(--text3);line-height:1.5;margin-top:10px;}
@@ -415,6 +429,10 @@
     <input type="checkbox" id="amort-check" onchange="toggleAmort()">
     <label for="amort-check">Spread this expense over multiple months</label>
   </div>
+  <div class="amort-check-row" id="prepay-row">
+    <input type="checkbox" id="prepay-check">
+    <label for="prepay-check">Paid early: instalment prepayment, not new spending</label>
+  </div>
   <div class="amort-extra" id="amort-extra">
     <label>Spread over how many months?</label>
     <input id="amort-months" type="number" inputmode="numeric" placeholder="e.g. 4" min="2" max="36">
@@ -428,10 +446,10 @@
   <div class="year-tabs" id="year-tabs"></div>
   <div class="month-nav" id="month-nav"></div>
   <div class="metric-grid">
-    <div class="metric"><div class="metric-label">Income</div><div class="metric-value" id="ov-income">€0</div><div id="ov-income-mom"></div></div>
-    <div class="metric"><div class="metric-label">Expenses</div><div class="metric-value" id="ov-spent">€0</div><div id="ov-spent-mom"></div></div>
-    <div class="metric"><div class="metric-label">Investing</div><div class="metric-value" id="ov-inv">€0</div><div id="ov-inv-mom"></div></div>
-    <div class="metric"><div class="metric-label">Saved (cash)</div><div class="metric-value" id="ov-net">€0</div><div id="ov-net-mom"></div></div>
+    <div class="metric tap" id="tile-income" onclick="setEntryFilter('kind','income')"><div class="metric-label">Income</div><div class="metric-value" id="ov-income">€0</div><div id="ov-income-mom"></div></div>
+    <div class="metric tap" id="tile-expense" onclick="setEntryFilter('kind','expense')"><div class="metric-label">Expenses</div><div class="metric-value" id="ov-spent">€0</div><div id="ov-spent-mom"></div><div class="tile-split" id="ov-split"></div></div>
+    <div class="metric tap" id="tile-invest" onclick="setEntryFilter('kind','invest')"><div class="metric-label">Investing</div><div class="metric-value" id="ov-inv">€0</div><div id="ov-inv-mom"></div></div>
+    <div class="metric tap" onclick="setEntryFilter(null)"><div class="metric-label">Saved (cash)</div><div class="metric-value" id="ov-net">€0</div><div id="ov-net-mom"></div></div>
     <div class="metric metric-wide" onclick="openBudgets()" style="cursor:pointer;">
       <div class="metric-label">Where your income went <span class="metric-hint">tap to set targets</span></div>
       <div class="alloc-bar" id="alloc-bar"><div class="alloc-seg alloc-exp" id="alloc-exp"></div><div class="alloc-seg alloc-inv" id="alloc-inv"></div><div class="alloc-seg alloc-sav" id="alloc-sav"></div></div>
@@ -444,7 +462,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><div class="card-title" style="margin:0;">Expenses by category</div><button class="btn-sm" onclick="openBudgets()">Budgets</button></div>
     <div id="cat-bars"><div class="empty">No expenses yet</div></div>
     <div class="card-title" style="margin-top:18px;">Investing</div><div id="inv-bars"><div class="empty">Nothing invested this month</div></div></div>
-  <div class="card"><div class="card-title">Entries</div><div id="tx-list"><div class="empty">Nothing logged yet</div></div></div>
+  <div class="card" id="entries-card"><div class="entries-head"><div class="card-title" style="margin:0;">Entries</div><div id="entry-filter-chip"></div></div><div id="tx-list"><div class="empty">Nothing logged yet</div></div></div>
 </div>
 
 <!-- FEEDBACK TAB -->
@@ -453,6 +471,10 @@
   <div class="fb-monthbar"><button class="btn-sm" onclick="fbShift(-1)" aria-label="Previous month">‹</button><div id="fb-month">—</div><button class="btn-sm" onclick="fbShift(1)" aria-label="Next month">›</button></div>
   <div class="card"><div class="card-title">Targets</div><div id="fb-targets"></div><button class="btn-sm" style="margin-top:12px;width:100%;padding:10px;" onclick="openBudgets()">Edit targets and budgets</button></div>
   <div class="card"><div class="card-title">Coach</div><div id="fb-coach"></div></div>
+  <div class="card"><div class="card-title">Essentials vs lifestyle</div><div id="fb-mix"></div></div>
+  <div class="card"><div class="card-title">Outlook, next 3 months</div><div id="fb-outlook"></div></div>
+  <div class="card"><div class="card-title">Safety cushion</div><div id="fb-cushion"></div></div>
+  <div class="card"><div class="card-title">Planned changes</div><div id="fb-planned"></div></div>
   <div class="card"><div class="card-title">Expense details</div><div id="fb-details"></div></div>
   <div class="card"><div class="card-title">Investing</div><div id="fb-invest"></div></div>
   <div class="card">
@@ -849,7 +871,12 @@
       <div><label>Investing ≥</label><input id="tg-inv" type="number" inputmode="numeric" min="0" max="100"></div>
       <div><label>Saved</label><input id="tg-sav" type="number" inputmode="numeric" min="0" max="100"></div>
     </div>
-    <p class="api-note" style="text-align:left;margin:-4px 0 14px;">Must add up to 100. Default 50 / 40 / 10.</p>
+    <p class="api-note" style="text-align:left;margin:-4px 0 10px;">Must add up to 100. Default 50 / 40 / 10.</p>
+    <div class="row">
+      <div><label>Essentials ≤</label><input id="tg-ess" type="number" inputmode="numeric" min="0" max="100"></div>
+      <div><label>Lifestyle ≤</label><input id="tg-life" type="number" inputmode="numeric" min="0" max="100"></div>
+    </div>
+    <p class="api-note" style="text-align:left;margin:-4px 0 14px;">Split of the expenses ceiling; must add up to it. Default 30 / 20. Tap a category label below to switch it between essential and lifestyle.</p>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="card-title" style="margin:0;">Monthly budget per category (€)</div><button class="btn-sm" onclick="fillBudgetsFromHistory(this)">Use 3-month average</button></div>
     <div id="budget-rows"></div>
     <button class="btn btn-primary" style="margin-top:12px;" onclick="saveBudgets(this)">Save</button>
@@ -885,6 +912,10 @@
       <input type="checkbox" id="edit-amort-check" onchange="document.getElementById('edit-amort-extra').classList.toggle('visible',this.checked)">
       <label for="edit-amort-check" style="margin:0;cursor:pointer;">Spread over multiple months</label>
     </div>
+    <div class="amort-check-row" id="edit-prepay-row">
+      <input type="checkbox" id="edit-prepay-check">
+      <label for="edit-prepay-check" style="margin:0;cursor:pointer;">Paid early: instalment prepayment</label>
+    </div>
     <div id="edit-amort-extra" class="amort-extra">
       <label>Number of months</label>
       <input id="edit-amort-months" type="number" inputmode="numeric" min="2" max="60" placeholder="e.g. 24">
@@ -897,7 +928,7 @@
 </div>
 
 <script>
-const APP_VERSION='2026-10-15 r4';
+const APP_VERSION='2026-10-16 r5';
 // Sobha: exactly one installment per month counts as investing, capped at EUR 1,500. Everything else paid to Sobha is an expense (Sobha bills & fees).
 const SOBHA_CAP=1500,SOBHA_MIN=1455;
 const APP_ID='luca',RAW_NS='fos_';
@@ -1522,7 +1553,7 @@ function updateFXDisplay(){
 // ── Log ────────────────────────────────────────────────────────────
 // Three kinds of entry. Investing entries are stored with type 'expense'; their category makes them investing.
 const CAT_GROUPS={
-  expense:[['Essentials',['Housing','Utilities','Telecom','Groceries','Transport','Health','Pet','Baby','Sobha bills & fees']],['Family',['Aurora fund']],['Lifestyle',['Dining Out','Travel','Entertainment','Shopping','Personal Care']],['One-offs',['Gift','Education','Other']]],
+  expense:[['Essentials',['Housing','Utilities','Telecom','Groceries','Transport','Health','Pet','Baby','Sobha bills & fees']],['Family',['Aurora fund','Childcare']],['Lifestyle',['Dining Out','Travel','Entertainment','Shopping','Personal Care']],['One-offs',['Gift','Education','Other']]],
   invest:[['Investing',['IBKR','Sobha','Crypto']]],
   income:[['Income',['Salary','Bonus','Side income','Refund']]]
 };
@@ -1546,6 +1577,7 @@ function setType(t){setKind(t==='income'?'income':'expense');}
 function syncAmortRow(){
   const row=document.querySelector('.amort-check-row');if(!row)return;
   const off=txKind!=='expense';row.style.display=off?'none':'';
+  const pr=document.getElementById('prepay-row');if(pr){pr.style.display=off?'none':'';if(off)document.getElementById('prepay-check').checked=false;}
   if(off){const c=document.getElementById('amort-check');if(c&&c.checked){c.checked=false;toggleAmort();}}
 }
 
@@ -1569,8 +1601,10 @@ function logTransaction(){
   const amountEUR=toEUR(amount,txCur);
   transactions.unshift({
     id:Date.now(),amount:amountEUR,amountOriginal:amount,currencyOriginal:txCur,
-    desc,cat,type:txType,date,amort:amort&&months>1,months:amort?months:1
+    desc,cat,type:txType,date,amort:amort&&months>1,months:amort?months:1,
+    prepay:txKind==='expense'&&document.getElementById('prepay-check').checked
   });
+  document.getElementById('prepay-check').checked=false;
   localStorage.setItem('fos_tx',JSON.stringify(transactions));
   document.getElementById('tx-amount').value='';
   document.getElementById('tx-desc').value='';
@@ -1597,6 +1631,7 @@ function openEditTx(id){
   setEditKind(kindOf(tx),tx.cat);
   document.getElementById('edit-tx-date').value=tx.date;
   document.getElementById('edit-amort-check').checked=!!tx.amort;
+  document.getElementById('edit-prepay-check').checked=!!tx.prepay;
   document.getElementById('edit-amort-extra').classList.toggle('visible',!!tx.amort);
   document.getElementById('edit-amort-months').value=tx.amort?tx.months:'';
   // Show modal
@@ -1613,6 +1648,7 @@ function setEditKind(kind,selected){
   editKind=kind;editTxType=kind==='income'?'income':'expense';
   document.querySelectorAll('#edit-kind .toggle-btn').forEach(b=>b.classList.toggle('active',b.dataset.kind===kind));
   document.getElementById('edit-tx-cat').innerHTML=catOptionsHtml(kind,selected||null);
+  const ep=document.getElementById('edit-prepay-row');if(ep)ep.style.display=kind==='expense'?'':'none';
 }
 function setEditType(t){setEditKind(t==='income'?'income':'expense');}
 
@@ -1637,7 +1673,8 @@ function saveEditTx(){
     type:editTxType,
     date,
     amort:amort&&months>1,
-    months:amort?months:1
+    months:amort?months:1,
+    prepay:editKind==='expense'&&document.getElementById('edit-prepay-check').checked
   };
   localStorage.setItem('fos_tx',JSON.stringify(transactions));
   const sob=normalizeSobha();
@@ -1664,7 +1701,7 @@ const CASH_TRANSFER_CATS=new Set(['Savings']);
 // Ignored everywhere: Kindergeld belongs to Aurora and is invested for her outside this app.
 const IGNORED_CATS=new Set(['Kindergeld']);
 function getMonthData(month,year,maxDay){
-  let income=0,spent=0,invested=0;const cats={},invCats={};const sob=[];
+  let income=0,spent=0,invested=0;const cats={},invCats={},techCats={};const sob=[];
   transactions.forEach(tx=>{
     const d=new Date(tx.date);
     let eff=tx.amort?tx.amount/tx.months:tx.amount;
@@ -1681,7 +1718,7 @@ function getMonthData(month,year,maxDay){
     if(tx.type==='income')income+=eff;
     else if(tx.cat==='Sobha'&&!tx.amort)sob.push(eff);
     else if(INVEST_CATEGORIES.has(tx.cat)){invested+=eff;invCats[tx.cat]=(invCats[tx.cat]||0)+eff;}
-    else{spent+=eff;cats[tx.cat]=(cats[tx.cat]||0)+eff;}
+    else{spent+=eff;cats[tx.cat]=(cats[tx.cat]||0)+eff;if(!tx.amort&&isTechInstalment(tx))techCats[tx.cat]=(techCats[tx.cat]||0)+eff;}
   });
   if(sob.length){
     sob.sort((a,b)=>b-a);let inv=0,bills=0;
@@ -1689,7 +1726,7 @@ function getMonthData(month,year,maxDay){
     if(inv>0){invested+=inv;invCats.Sobha=(invCats.Sobha||0)+inv;}
     if(bills>0.004){spent+=bills;cats['Sobha bills & fees']=(cats['Sobha bills & fees']||0)+bills;}
   }
-  return{income,spent,invested,cats,invCats};
+  return{income,spent,invested,cats,invCats,techCats};
 }
 
 function buildMonthNav(){
@@ -1726,7 +1763,7 @@ function renderOverview(){
   const todayDate=new Date();
   const isCurrentMonth=(viewMonth===todayDate.getMonth()&&viewYear===todayDate.getFullYear());
   const maxDay=isCurrentMonth?todayDate.getDate():null;
-  const{income,spent,invested,cats,invCats}=getMonthData(viewMonth,viewYear,maxDay);
+  const{income,spent,invested,cats,invCats,techCats}=getMonthData(viewMonth,viewYear,maxDay);
   const fullMonth=isCurrentMonth?getMonthData(viewMonth,viewYear):null;
   const scheduledOut=fullMonth?(fullMonth.spent+fullMonth.invested)-(spent+invested):0;
   const scheduledIn=fullMonth?fullMonth.income-income:0;
@@ -1788,10 +1825,14 @@ function renderOverview(){
     const sorted=Object.entries(obj).sort((a,b)=>b[1]-a[1]);
     const maxV=sorted.length>0?sorted[0][1]:1;
     return sorted.map(([cat,val],i)=>
-      `<div class="bar-row"><div class="bar-cat">${catLabel(cat)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((val/maxV)*100)}%;background:${cols[i%cols.length]}"></div></div><div class="bar-amt">${fmt(val)}</div></div>`
+      `<div class="bar-row tap${entryFilter&&entryFilter.type==='cat'&&entryFilter.v===cat?' filter-on':''}" data-cat="${_attr(cat)}" onclick="setEntryFilter('cat',this.dataset.cat)"><div class="bar-cat">${catLabel(cat)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((val/maxV)*100)}%;background:${cols[i%cols.length]}"></div></div><div class="bar-amt">${fmt(val)}</div></div>`
     ).join('')||`<div class="empty">${emptyMsg}</div>`;
   }
-  document.getElementById('cat-bars').innerHTML=budgetBars(cats,isCurrentMonth);
+  document.getElementById('cat-bars').innerHTML=budgetBars(cats,isCurrentMonth,techCats);
+  const spl=splitClass(cats);const ovs=document.getElementById('ov-split');
+  if(ovs)ovs.innerHTML=spent>0?`<span class="tap" onclick="event.stopPropagation();setEntryFilter('class','essential')">Essentials ${fmt0(spl.e)}</span><br><span class="tap" onclick="event.stopPropagation();setEntryFilter('class','lifestyle')">Lifestyle ${fmt0(spl.l)}</span>`:'';
+  [['tile-income','income'],['tile-expense','expense'],['tile-invest','invest']].forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.classList.toggle('filter-on',!!entryFilter&&entryFilter.type==='kind'&&entryFilter.v===k);});
+  const chip=document.getElementById('entry-filter-chip');if(chip)chip.innerHTML=filterChipHtml();
   document.getElementById('inv-bars').innerHTML=bars(invCats,'Nothing invested this month');
   renderAlloc(income,spent,invested,left,prev,isCurrentMonth,invCats);
   renderCoachMini();
@@ -1803,7 +1844,7 @@ function renderOverview(){
       return curMIdx>=txM&&curMIdx<txM+tx.months;
     }
     return d.getMonth()===viewMonth&&d.getFullYear()===viewYear;
-  }).sort((a,b)=>{
+  }).filter(entryMatches).sort((a,b)=>{
     // Newest date first; for same date, income before expense
     if(a.date!==b.date)return b.date.localeCompare(a.date);
     if(a.type!==b.type)return a.type==='income'?-1:1;
@@ -1866,7 +1907,7 @@ function renderOverview(){
       </div>
       <div class="day-txs">${rows}</div>
     </div>`;
-  }).join('')||'<div class="empty">Nothing logged this month</div>';
+  }).join('')||(entryFilter?'<div class="empty">No entries match this filter</div>':'<div class="empty">Nothing logged this month</div>');
 }
 
 // ── Signals: locally computed feedback on spending and investing ──
@@ -1884,7 +1925,7 @@ function plannedMonthlyInvest(year){
 }
 // Average of up to N prior months that actually contain data, at the same day cutoff when MTD.
 function priorAverage(n,maxDay){
-  const out={spent:0,invested:0,income:0,cats:{},months:0};
+  const out={spent:0,invested:0,income:0,cats:{},techCats:{},months:0};
   for(let k=1;k<=n;k++){
     let m=viewMonth-k,y=viewYear;
     while(m<0){m+=12;y--;}
@@ -1892,17 +1933,19 @@ function priorAverage(n,maxDay){
     if(d.income===0&&d.spent===0&&d.invested===0)continue;
     out.months++;out.spent+=d.spent;out.invested+=d.invested;out.income+=d.income;
     Object.entries(d.cats).forEach(([c,v])=>{out.cats[c]=(out.cats[c]||0)+v;});
+    Object.entries(d.techCats||{}).forEach(([c,v])=>{out.techCats[c]=(out.techCats[c]||0)+v;});
   }
   if(out.months>0){
     out.spent/=out.months;out.invested/=out.months;out.income/=out.months;
     Object.keys(out.cats).forEach(c=>{out.cats[c]/=out.months;});
+    Object.keys(out.techCats).forEach(c=>{out.techCats[c]/=out.months;});
   }
   return out;
 }
 // ── Buckets, budgets, actions ─────────────────────────────────────
 const CAT_LABELS={'Sobha':'Sobha installment'};
 function catLabel(c){return CAT_LABELS[c]||c;}
-const EXPENSE_CATS=['Housing','Utilities','Telecom','Groceries','Transport','Health','Pet','Baby','Sobha bills & fees','Aurora fund','Dining Out','Travel','Entertainment','Shopping','Personal Care','Gift','Education','Other'];
+const EXPENSE_CATS=['Housing','Utilities','Telecom','Groceries','Transport','Health','Pet','Baby','Sobha bills & fees','Aurora fund','Childcare','Dining Out','Travel','Entertainment','Shopping','Personal Care','Gift','Education','Other'];
 // Variable spend you can steer month to month. Fixed costs and Aurora's fund are excluded from cut advice.
 const DISCRETIONARY=new Set(['Groceries','Transport','Dining Out','Travel','Entertainment','Shopping','Personal Care','Gift','Education','Other']);
 const CAT_TIPS={
@@ -1919,23 +1962,32 @@ const CAT_TIPS={
 };
 function getBudgets(){try{return JSON.parse(localStorage.getItem('fos_budgets')||'{}')||{};}catch(e){return{};}}
 function getAllocTargets(){
-  const d={exp:50,inv:40,sav:10};
-  try{return Object.assign(d,JSON.parse(localStorage.getItem('fos_alloc')||'{}')||{});}catch(e){return d;}
+  const d={exp:50,inv:40,sav:10,ess:30,life:20};
+  try{const o=Object.assign(d,JSON.parse(localStorage.getItem('fos_alloc')||'{}')||{});if(Math.round(o.ess+o.life)!==Math.round(o.exp)){o.life=Math.max(0,o.exp-o.ess);}return o;}catch(e){return d;}
 }
 function _daysInView(){return new Date(viewYear,viewMonth+1,0).getDate();}
 
-function budgetBars(cats,isCurrentMonth){
+function budgetBars(cats,isCurrentMonth,techCats){
+  techCats=techCats||{};
   const bud=getBudgets();
   const keys=[...new Set([...Object.keys(cats),...Object.keys(bud).filter(k=>bud[k]>0)])];
   if(!keys.length)return '<div class="empty">No expenses this month</div>';
-  const rows=keys.map(k=>({k,v:cats[k]||0,b:bud[k]||0})).sort((a,b)=>b.v-a.v||b.b-a.b);
+  const rows=keys.map(k=>({k,v:cats[k]||0,t:techCats[k]||0,b:bud[k]||0}));
   const maxV=Math.max(1,...rows.map(r=>Math.max(r.v,r.b)));
   const cols=['#1db954','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#a3a3a3','#eab308'];
-  return rows.map((r,i)=>{
-    const over=r.b>0&&r.v>r.b+0.5;
-    const sub=r.b>0?(over?`${fmt(r.v-r.b)} over`:`of ${fmt(r.b)}`):'';
+  const F=entryFilter;
+  const row=r=>{
+    const judged=r.v-r.t,over=r.b>0&&judged>r.b+0.5;
+    const sub=r.b>0?(over?`${fmt(judged-r.b)} over`:`of ${fmt(r.b)}`):'';
+    const tech=r.t>0.5?`<span class="bar-sub">incl. ${fmt0(r.t)} device instalments</span>`:'';
     const marker=r.b>0?`<div class="bar-budget" style="left:calc(${Math.min(100,r.b/maxV*100)}% - 1px)"></div>`:'';
-    return `<div class="bar-row"><div class="bar-cat">${catLabel(r.k)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(r.v/maxV*100)}%;background:${over?'var(--red)':cols[(EXPENSE_CATS.indexOf(r.k)>=0?EXPENSE_CATS.indexOf(r.k):i)%cols.length]}"></div>${marker}</div><div class="bar-amt${over?' over':''}">${fmt(r.v)}${sub?`<span class="bar-sub">${sub}</span>`:''}</div></div>`;
+    const on=F&&F.type==='cat'&&F.v===r.k?' filter-on':'';
+    return `<div class="bar-row tap${on}" data-cat="${_attr(r.k)}" onclick="setEntryFilter('cat',this.dataset.cat)"><div class="bar-cat">${catLabel(r.k)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(r.v/maxV*100)}%;background:${over?'var(--red)':cols[(EXPENSE_CATS.indexOf(r.k)>=0?EXPENSE_CATS.indexOf(r.k):0)%cols.length]}"></div>${marker}</div><div class="bar-amt${over?' over':''}">${fmt(r.v)}${sub?`<span class="bar-sub">${sub}</span>`:''}${tech}</div></div>`;
+  };
+  return ['essential','lifestyle'].map(cl=>{
+    const rs=rows.filter(r=>catClass(r.k)===cl).sort((a,b)=>b.v-a.v||b.b-a.b);if(!rs.length)return '';
+    const tot=rs.reduce((t,r)=>t+r.v,0),on=F&&F.type==='class'&&F.v===cl?' filter-on':'';
+    return `<div class="cls-head tap${on}" onclick="setEntryFilter('class','${cl}')"><span>${cl==='essential'?'Essentials':'Lifestyle'}</span><b>${fmt0(tot)}</b></div>`+rs.map(row).join('');
   }).join('');
 }
 
@@ -1961,8 +2013,16 @@ function renderAlloc(income,spent,invested,left,prev,isCur,invCats){
 function openBudgets(){
   const tg=getAllocTargets(),bud=getBudgets();
   document.getElementById('tg-exp').value=tg.exp;document.getElementById('tg-inv').value=tg.inv;document.getElementById('tg-sav').value=tg.sav;
-  document.getElementById('budget-rows').innerHTML=EXPENSE_CATS.map(c=>`<div class="budget-row"><span>${catLabel(c)}${DISCRETIONARY.has(c)?'':' <span style="font-size:10px;color:var(--text3);">fixed</span>'}</span><input type="number" inputmode="decimal" data-cat="${c.replace(/"/g,'&quot;')}" value="${bud[c]>0?bud[c]:''}" placeholder="—"></div>`).join('');
+  document.getElementById('tg-ess').value=tg.ess;document.getElementById('tg-life').value=tg.life;
+  document.getElementById('budget-rows').innerHTML=EXPENSE_CATS.map(c=>`<div class="budget-row"><span class="tap" data-cat="${_attr(c)}" onclick="toggleCatClass(this)">${catLabel(c)} <span class="cls-pill cls-${catClass(c)}">${catClass(c)==='essential'?'essential':'lifestyle'}</span></span><input type="number" inputmode="decimal" data-cat="${c.replace(/"/g,'&quot;')}" value="${bud[c]>0?bud[c]:''}" placeholder="—"></div>`).join('');
   document.getElementById('budgets-overlay').classList.add('visible');
+}
+function toggleCatClass(el){
+  const c=el.dataset.cat;const nx=catClass(c)==='essential'?'lifestyle':'essential';
+  const def=ESSENTIAL_DEFAULT.includes(c)?'essential':'lifestyle';
+  if(nx===def)delete CAT_CLASS_OV[c];else CAT_CLASS_OV[c]=nx;
+  localStorage.setItem('fos_cat_class',JSON.stringify(CAT_CLASS_OV));
+  const p=el.querySelector('.cls-pill');if(p){p.className='cls-pill cls-'+nx;p.textContent=nx;}
 }
 function closeBudgets(){document.getElementById('budgets-overlay').classList.remove('visible');}
 // Average of up to 3 prior calendar months that contain data (relative to today), per category.
@@ -1989,12 +2049,14 @@ function fillBudgetsFromHistory(btn){
 function saveBudgets(btn){
   const e=parseFloat(document.getElementById('tg-exp').value),i=parseFloat(document.getElementById('tg-inv').value),s=parseFloat(document.getElementById('tg-sav').value);
   if([e,i,s].some(x=>isNaN(x)||x<0)||Math.round(e+i+s)!==100){btnFail(btn,'Targets must add up to 100');return;}
+  const es=parseFloat(document.getElementById('tg-ess').value),li=parseFloat(document.getElementById('tg-life').value);
+  if([es,li].some(x=>isNaN(x)||x<0)||Math.round(es+li)!==Math.round(e)){btnFail(btn,'Essentials + lifestyle must equal '+e);return;}
   const bud={};
   document.querySelectorAll('#budget-rows input').forEach(inp=>{const v=parseFloat(inp.value);if(v>0)bud[inp.dataset.cat]=v;});
   localStorage.setItem('fos_budgets',JSON.stringify(bud));
-  localStorage.setItem('fos_alloc',JSON.stringify({exp:e,inv:i,sav:s}));
+  localStorage.setItem('fos_alloc',JSON.stringify({exp:e,inv:i,sav:s,ess:es,life:li}));
   btnDone(btn,'Saved');
-  setTimeout(()=>{closeBudgets();renderOverview();},700);
+  setTimeout(()=>{closeBudgets();renderOverview();if(document.getElementById('screen-feedback').classList.contains('active'))renderFeedback();},700);
 }
 
 // Months until FI under the saved Freedom plan (solo), with optional extra monthly investment from a given month.
@@ -2166,7 +2228,7 @@ function buildCoach(ctx){
   const moves=[];
   Object.keys({...cur.cats,...avg.cats}).forEach(c=>{
     if(!DISCRETIONARY.has(c))return;
-    const v=cur.cats[c]||0,a=avg.cats[c]||0,d=v-a;
+    const v=(cur.cats[c]||0)-((cur.techCats||{})[c]||0),a=(avg.cats[c]||0)-((avg.techCats||{})[c]||0),d=v-a;
     moves.push({c,v,a,d});
   });
   if(!early&&avg.months){
@@ -2189,14 +2251,14 @@ function buildCoach(ctx){
     const frac=Math.min(1,day/ctx.dim),daysLeft=ctx.dim-day;
     Object.entries(bud).forEach(([c,b])=>{
       if(!DISCRETIONARY.has(c)||watch.some(w=>w.c===c))return;
-      const v=cur.cats[c]||0,used=v/b;
+      const v=(cur.cats[c]||0)-((cur.techCats||{})[c]||0),used=v/b;
       if(v>b+0.5)watch.push({t:`<b>${catLabel(c)}</b> ${fmt0(v)} vs ${fmt0(b)} budget: ${fmt0(v-b)} over with ${daysLeft} days to go.`,v:v-b,c});
       else if(used>frac+0.15&&daysLeft>0)watch.push({t:`<b>${catLabel(c)}</b>: ${Math.round(used*100)}% of the ${fmt0(b)} budget used with ${Math.round((1-frac)*100)}% of the month left. ${fmt0(b-v)} for ${daysLeft} days (<span class="nw">${fmt(Math.floor((b-v)/daysLeft*100)/100)}/day</span>).`,v:(used-frac)*b,c});
     });
   } else if(!isCur){
     Object.entries(bud).forEach(([c,b])=>{
       if(!DISCRETIONARY.has(c)||watch.some(w=>w.c===c))return;
-      const v=cur.cats[c]||0;
+      const v=(cur.cats[c]||0)-((cur.techCats||{})[c]||0);
       if(v>b+0.5)watch.push({t:`<b>${catLabel(c)}</b> ${fmt0(v)} vs ${fmt0(b)} budget: ${fmt0(v-b)} over.`,v:v-b,c});
     });
   }
@@ -2230,12 +2292,13 @@ function buildCoach(ctx){
     next.push({t:`Logged Sobha installments run to ${endD.toLocaleDateString('default',{month:'short',year:'numeric'})}. Redirect the ${fmt0(1500)} to IBKR the month after${g?`: freedom about <b>${g} earlier</b>`:''}.`,v:4});
   }
   const flagged=new Set(watch.filter(w=>w.c).map(w=>w.c));
-  return{wins:wins.filter(x=>!x.c||!flagged.has(x.c)).slice(0,3),watch:watch.sort((a,b)=>b.v-a.v).slice(0,4),next:next.slice(0,3),notes,hits};
+  return{ahead:isCur?aheadItems():[],wins:wins.filter(x=>!x.c||!flagged.has(x.c)).slice(0,3),watch:watch.sort((a,b)=>b.v-a.v).slice(0,4),next:next.slice(0,3),notes,hits};
 }
 
 function coachHtml(co){
   const sec=(title,items,kind)=>items.length?`<div class="coach-h">${title}</div>`+items.map(i=>`<div class="signal"><div class="signal-dot sig-${kind}"></div><div>${i.t}</div></div>`).join(''):'';
-  const body=sec('Going well',co.wins,'good')+sec('Worth a look',co.watch,'warn')+sec('Next move',co.next,'info');
+  const ahead=(co.ahead||[]).length?`<div class="coach-h">Looking ahead</div>`+co.ahead.map(i=>`<div class="signal"><div class="signal-dot sig-${i.k}"></div><div>${i.t}</div></div>`).join(''):'';
+  const body=sec('Going well',co.wins,'good')+sec('Worth a look',co.watch,'warn')+sec('Next move',co.next,'info')+ahead;
   const notes=co.notes.length?`<div class="coach-note">${co.notes.join(' ')}</div>`:'';
   return (body||'<div class="empty">Nothing to flag yet. Log a few entries and check back.</div>')+notes;
 }
@@ -2314,12 +2377,17 @@ function targetsHtml(ctx){
     {k:'inv',name:'Investing',tgt:'≥'+tg.inv+'%',ok:v=>v>=tg.inv-0.5,good:1,col:'var(--blue)',t:tg.inv},
     {k:'sav',name:'Saved (cash)',tgt:tg.sav+'%',ok:v=>v>=tg.sav-0.5||(c.inv+v>=tg.inv+tg.sav-0.5&&v>=0),good:1,col:'var(--green)',t:tg.sav},
   ];
+  const sp=splitClass(ctx.cur.cats),spP=ctx.prev.income>0?splitClass(ctx.prev.cats):null;
+  c.ess=sp.e/ctx.cur.income*100;c.life=sp.l/ctx.cur.income*100;c.eEss=sp.e;c.eLife=sp.l;
+  if(p&&spP){p.ess=spP.e/ctx.prev.income*100;p.life=spP.l/ctx.prev.income*100;}
+  if(a){const ap=priorAverage(3,ctx.maxDay);const as=splitClass(ap.cats);a.ess=ap.income>0?as.e/ap.income*100:0;a.life=ap.income>0?as.l/ap.income*100:0;}
+  rows.splice(1,0,{k:'ess',name:'Essentials',sub:true,tgt:'≤'+tg.ess+'%',ok:v=>v<=tg.ess+0.5,col:'#f87171',t:tg.ess},{k:'life',name:'Lifestyle',sub:true,tgt:'≤'+tg.life+'%',ok:v=>v<=tg.life+0.5,col:'#fb923c',t:tg.life});
   const html=rows.map(r=>{
     const v=c[r.k],ok=r.ok(v);const pend=r.k==='inv'&&!ok?ibkrPending(ctx.isCur,ctx.cur.invCats):null;
     const mom=p?`· ${ctx.prevName} ${Math.round(p[r.k])}%`:'';
     const av=a?` · 3-month avg ${Math.round(a[r.k])}%`:'';
     const w=Math.max(0,Math.min(100,v));
-    return `<div class="tg-row"><div class="tg-top"><span class="tg-name">${r.name}</span><span class="tg-val"><b>${Math.round(v)}%</b> <span class="muted">${fmt0(c['e'+r.k[0].toUpperCase()+r.k.slice(1)])}</span></span></div>
+    return `<div class="tg-row${r.sub?' tg-subrow':''}"><div class="tg-top"><span class="tg-name">${r.name}</span><span class="tg-val"><b>${Math.round(v)}%</b> <span class="muted">${fmt0(c['e'+r.k[0].toUpperCase()+r.k.slice(1)])}</span></span></div>
       <div class="tg-bar"><div class="tg-fill" style="width:${w}%;background:${r.col}"></div><div class="tg-mark" style="left:calc(${Math.min(100,r.t)}% - 1px)"></div></div>
       <div class="tg-sub"><span class="${ok?'ok':pend?'':'off'}">${ok?'✓ on target ('+r.tgt+')':pend?'target '+r.tgt+', IBKR usually lands around day '+pend:'off target ('+r.tgt+')'}</span> ${mom}${av}</div></div>`;
   }).join('');
@@ -2378,14 +2446,19 @@ function renderFeedback(){
   document.getElementById('fb-coach').innerHTML=coachHtml(co);
   document.getElementById('fb-details').innerHTML=buildDetails(ctx,co);
   document.getElementById('fb-invest').innerHTML=investHtml(ctx);
+  document.getElementById('fb-mix').innerHTML=mixHtml();
+  document.getElementById('fb-outlook').innerHTML=outlookHtml();
+  document.getElementById('fb-cushion').innerHTML=cushionHtml();
+  const pl=document.getElementById('fb-planned');if(pl&&!(pl.contains(document.activeElement)&&document.activeElement.tagName!=='BUTTON'))pl.innerHTML=plannedHtml();
   document.getElementById('fb-claude').innerHTML=claudeNotesHtml();
   renderFeedbackMeta();
 }
 function renderCoachMini(){
   const el=document.getElementById('coach-mini');if(!el)return;
   const co=buildCoach(monthCtx());
-  const pick=[...co.watch.slice(0,2),...co.next.slice(0,1),...co.wins.slice(0,1)].slice(0,3);
-  const kind=i=>co.watch.includes(i)?'warn':co.next.includes(i)?'info':'good';
+  const aw=(co.ahead||[]).filter(i=>i.k==='warn').slice(0,1);
+  const pick=[...co.watch.slice(0,2),...aw,...co.next.slice(0,1),...co.wins.slice(0,1)].slice(0,3);
+  const kind=i=>co.watch.includes(i)?'warn':co.next.includes(i)?'info':aw.includes(i)?'warn':'good';
   el.innerHTML=pick.map(i=>`<div class="signal"><div class="signal-dot sig-${kind(i)}"></div><div>${i.t}</div></div>`).join('')||'<div class="empty">Nothing to flag. Open Feedback for the full review.</div>';
 }
 function fbShift(d){viewMonth+=d;while(viewMonth<0){viewMonth+=12;viewYear--;}while(viewMonth>11){viewMonth-=12;viewYear++;}renderFeedback();}
@@ -2511,6 +2584,273 @@ function clearData(){
   if(!confirm('Delete ALL data in this app on this phone? Export a backup first. This cannot be undone.'))return;
   ownKeys().forEach(k=>localStorage.removeItem('fos_'+k));
   location.reload();
+}
+
+// ── Essentials vs lifestyle ───────────────────────────────────────
+// Essentials: the costs of running life (home, bills, food, health, family). Lifestyle: everything you choose on top.
+const ESSENTIAL_DEFAULT=['Housing','Utilities','Telecom','Groceries','Transport','Health','Pet','Baby','Childcare','Sobha bills & fees','Aurora fund'];
+let CAT_CLASS_OV={};try{CAT_CLASS_OV=JSON.parse(localStorage.getItem('fos_cat_class')||'{}')||{};}catch(e){}
+function catClass(c){return CAT_CLASS_OV[c]||(ESSENTIAL_DEFAULT.includes(c)?'essential':'lifestyle');}
+function splitClass(cats){let e=0,l=0;Object.entries(cats||{}).forEach(([c,v])=>{if(catClass(c)==='essential')e+=v;else l+=v;});return{e,l};}
+// Device payment plans (regular instalments or paid early): financing of earlier purchases, not new spending.
+function isTechInstalment(tx){return !!tx.prepay||(tx.type!=='income'&&isInstalmentDesc(tx.desc));}
+const PREPAY_RE=/pay\s*off|paid\s*off|payoff|prepa|early|remaining|rest\b|final|ahead/i;
+function isPrepayment(tx){return !!tx.prepay||(isInstalmentDesc(tx.desc)&&PREPAY_RE.test(tx.desc||''));}
+const ymStr=(y,m)=>y+'-'+String(m+1).padStart(2,'0');
+function monthAdd(y,m,k){const d=new Date(y,m+k,1);return{y:d.getFullYear(),m:d.getMonth()};}
+const mShort=(y,m)=>new Date(y,m,1).toLocaleString('default',{month:'short'});
+
+// ── Overview filter: tap a tile, a group or a category ────────────
+let entryFilter=null;
+const FILTER_LABEL={kind:{expense:'Expenses',invest:'Investments',income:'Income'},class:{essential:'Essentials',lifestyle:'Lifestyle'}};
+function setEntryFilter(type,v){
+  entryFilter=(!type||(entryFilter&&entryFilter.type===type&&entryFilter.v===v))?null:{type,v};
+  renderOverview();
+  if(entryFilter){const c=document.getElementById('entries-card');if(c&&c.scrollIntoView)c.scrollIntoView({behavior:'smooth',block:'start'});}
+}
+function entryMatches(tx){
+  const F=entryFilter;if(!F)return true;
+  const k=kindOf(tx);
+  if(F.type==='kind')return k===F.v;
+  if(F.type==='class')return k==='expense'&&catClass(tx.cat)===F.v;
+  if(F.type==='cat')return tx.cat===F.v;
+  return true;
+}
+function filterChipHtml(){
+  const F=entryFilter;if(!F)return '<span class="muted" style="font-size:11px;">Tap a figure above to filter</span>';
+  const label=F.type==='cat'?catLabel(F.v):(FILTER_LABEL[F.type]||{})[F.v]||F.v;
+  return `<button class="filter-chip" onclick="setEntryFilter(null)">${esc(label)} <span aria-hidden="true">✕</span></button>`;
+}
+
+// ── Monthly mix and history ───────────────────────────────────────
+function monthMix(y,m,maxDay){
+  const d=getMonthData(m,y,maxDay);const s=splitClass(d.cats);
+  let techE=0,techL=0;Object.entries(d.techCats||{}).forEach(([c,v])=>{if(catClass(c)==='essential')techE+=v;else techL+=v;});
+  return{...d,y,m,ess:s.e,life:s.l,techE,techL};
+}
+// Up to n complete months before (y,m) that contain data, oldest first.
+function recentMonths(n,y,m){
+  const out=[];
+  for(let k=1;k<=n;k++){const a=monthAdd(y,m,-k);const mx=monthMix(a.y,a.m);if(mx.income===0&&mx.spent===0&&mx.invested===0)continue;out.unshift(mx);}
+  return out;
+}
+// Typical month from the last 3 complete months: essentials and lifestyle without device instalments.
+function baseline(){
+  const now=new Date();const ms=recentMonths(3,now.getFullYear(),now.getMonth());
+  if(!ms.length)return null;
+  const avg=f=>ms.reduce((s,x)=>s+f(x),0)/ms.length;
+  const cat={};ms.forEach(x=>Object.entries(x.cats).forEach(([c,v])=>{cat[c]=(cat[c]||0)+(v-((x.techCats||{})[c]||0))/ms.length;}));
+  return{months:ms,ess:avg(x=>x.ess-x.techE),life:avg(x=>x.life-x.techL),cat,income:median(ms.map(x=>x.income)),ibkr:avg(x=>x.invCats.IBKR||0),crypto:avg(x=>x.invCats.Crypto||0),sobhaMonths:ms.filter(x=>(x.invCats.Sobha||0)>0).length};
+}
+
+// ── Planned changes (nanny, final Sobha payment, anything known ahead) ─
+function getPlanned(){try{return JSON.parse(localStorage.getItem('fos_planned')||'[]')||[];}catch(e){return[];}}
+function savePlanned(a){localStorage.setItem('fos_planned',JSON.stringify(a));}
+function plannedIn(y,m){const ym=ymStr(y,m);return getPlanned().filter(p=>p.kind==='once'?p.start===ym:(p.start<=ym&&(!p.end||ym<=p.end)));}
+const PLAN_CATS=()=>EXPENSE_CATS.concat(['Sobha']);
+function planPreset(kind){
+  const f=document.getElementById('plan-form');if(!f)return;
+  f.style.display='block';
+  const now=new Date(),next=monthAdd(now.getFullYear(),now.getMonth(),1);
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v;};
+  if(kind==='nanny'){set('plan-name','Nanny');set('plan-cat','Childcare');set('plan-kind','monthly');}
+  else if(kind==='sobha'){set('plan-name','Sobha final payment');set('plan-cat','Sobha');set('plan-kind','once');}
+  else{set('plan-name','');set('plan-cat','Other');set('plan-kind','once');}
+  set('plan-amount','');set('plan-start',ymStr(next.y,next.m));set('plan-end','');
+  syncPlanKind();
+  const a=document.getElementById('plan-amount');if(a)a.focus();
+}
+function syncPlanKind(){const k=document.getElementById('plan-kind');const e=document.getElementById('plan-end-wrap');if(k&&e)e.style.display=k.value==='monthly'?'':'none';}
+function addPlanned(btn){
+  const g=id=>(document.getElementById(id)||{}).value||'';
+  const name=g('plan-name').trim(),cat=g('plan-cat'),kind=g('plan-kind'),start=g('plan-start'),end=kind==='monthly'?g('plan-end'):'';
+  const amount=parseFloat(g('plan-amount'));
+  if(!name||!/^\d{4}-\d{2}$/.test(start)){btnFail(btn,'Name and month needed');return;}
+  const a=getPlanned();a.push({id:Date.now(),name,cat,kind,start,end,amount:amount>0?amount:null});savePlanned(a);
+  btnDone(btn,'Added');document.getElementById('plan-form').style.display='none';
+  renderFeedback();
+}
+function removePlanned(id){if(!confirm('Remove this planned change?'))return;savePlanned(getPlanned().filter(p=>p.id!==id));renderFeedback();}
+function saveSobhaEnd(v){localStorage.setItem('fos_sobha_end',v||'');renderFeedback();}
+function plannedHtml(){
+  const a=getPlanned();
+  const fmtMonth=ym=>{if(!ym)return '';const [y,m]=ym.split('-').map(Number);return new Date(y,m-1,1).toLocaleString('default',{month:'short',year:'numeric'});};
+  const list=a.length?a.map(p=>`<div class="plan-row"><div><b>${esc(p.name)}</b> <span class="muted">${esc(catLabel(p.cat))}</span><div class="fs-sub">${p.kind==='monthly'?'Monthly from '+fmtMonth(p.start)+(p.end?' to '+fmtMonth(p.end):''):'Once in '+fmtMonth(p.start)}</div></div><div style="text-align:right;">${p.amount>0?`<b>${fmt0(p.amount)}</b>`:'<span class="off-txt">amount not set</span>'}<button class="btn-sm plan-del" onclick="removePlanned(${p.id})">Remove</button></div></div>`).join(''):'<div class="coach-note" style="margin:0 0 10px;">Nothing planned yet. Add what you already know is coming, with your own amounts; the outlook and safety cushion use them.</div>';
+  const se=localStorage.getItem('fos_sobha_end')||'';
+  return list+
+    `<div class="plan-presets"><button class="btn-sm" onclick="planPreset('nanny')">+ Nanny</button><button class="btn-sm" onclick="planPreset('sobha')">+ Sobha final payment</button><button class="btn-sm" onclick="planPreset('other')">+ Other</button></div>`+
+    `<div id="plan-form" class="plan-form" style="display:none;">
+      <label>Name</label><input id="plan-name" type="text" placeholder="e.g. Nanny">
+      <div class="row"><div><label>Category</label><select id="plan-cat">${PLAN_CATS().map(c=>`<option value="${_attr(c)}">${_attr(catLabel(c))}</option>`).join('')}</select></div>
+      <div><label>Amount (€)</label><input id="plan-amount" type="number" inputmode="decimal" placeholder="your figure"></div></div>
+      <div class="row"><div><label>Type</label><select id="plan-kind" onchange="syncPlanKind()"><option value="monthly">Monthly</option><option value="once">One-off</option></select></div>
+      <div><label>From / in month</label><input id="plan-start" type="month"></div></div>
+      <div id="plan-end-wrap"><label>Until (optional)</label><input id="plan-end" type="month"></div>
+      <button class="btn btn-primary" onclick="addPlanned(this)">Add planned change</button>
+    </div>`+
+    `<div class="row" style="margin-top:12px;align-items:end;"><div><label>Sobha installments end after</label><input type="month" value="${_attr(se)}" onchange="saveSobhaEnd(this.value)"></div><div class="coach-note" style="margin:0 0 12px;">Leave empty if they continue. Rent can fund them; log rent as income when it starts.</div></div>`;
+}
+
+// ── Outlook: next 3 months from your own pattern, what is scheduled, and what you planned ─
+function projectMonth(y,m,b){
+  const sched=monthMix(y,m);
+  const ym=ymStr(y,m);
+  // Per category: the larger of your typical month and what is already logged, so rent logged ahead is not counted twice.
+  const cats={};
+  Object.keys({...b.cat,...sched.cats}).forEach(c=>{
+    const schedEx=(sched.cats[c]||0)-((sched.techCats||{})[c]||0);
+    cats[c]=Math.max(b.cat[c]||0,schedEx)+((sched.techCats||{})[c]||0);
+  });
+  const plan=plannedIn(y,m);let planInv=0,planOnce=0;const planMissing=[],onceItems=[];
+  plan.forEach(p=>{if(!(p.amount>0)){planMissing.push(p.name);return;}if(p.kind==='once'){planOnce+=p.amount;onceItems.push(p);}if(p.cat==='Sobha')planInv+=p.amount;else cats[p.cat]=(cats[p.cat]||0)+p.amount;});
+  const sp=splitClass(cats);
+  const income=sched.income>0?Math.max(sched.income,b.income):b.income;
+  const planIbkr=plannedMonthlyInvest(y);
+  const ibkr=Math.max(sched.invCats.IBKR||0,planIbkr!=null?planIbkr:b.ibkr);
+  const se=localStorage.getItem('fos_sobha_end')||'';
+  let sobha=sched.invCats.Sobha||0,sobhaAssumed=false;
+  if(!sobha&&b.sobhaMonths>=2&&(!se||ym<=se)){sobha=SOBHA_CAP;sobhaAssumed=true;}
+  const invested=ibkr+sobha+(sched.invCats.Crypto||0)+planInv;
+  const spent=sp.e+sp.l;
+  return{y,m,income,ess:sp.e,life:sp.l,tech:(sched.techE||0)+(sched.techL||0),invested,ibkr,sobha,sobhaAssumed,planInv,saved:income-spent-invested,planOnce,onceItems,planMissing,plan};
+}
+function outlook(){
+  const b=baseline();if(!b)return null;
+  const now=new Date();const rows=[];
+  for(let k=1;k<=3;k++){const a=monthAdd(now.getFullYear(),now.getMonth(),k);rows.push(projectMonth(a.y,a.m,b));}
+  return{b,rows};
+}
+function outlookHtml(){
+  const o=outlook();
+  if(!o)return '<div class="empty">Needs at least one complete month of entries.</div>';
+  const {b,rows}=o;const tg=getAllocTargets();
+  const head=`<tr><th></th>${rows.map(r=>`<th>${mShort(r.y,r.m)}</th>`).join('')}</tr>`;
+  const line=(label,f,cls)=>`<tr class="${cls||''}"><td>${label}</td>${rows.map(r=>`<td>${f(r)}</td>`).join('')}</tr>`;
+  const pct=(v,r)=>r.income>0?`<span class="muted"> ${Math.round(v/r.income*100)}%</span>`:'';
+  let cash=cashEUR();
+  const cashRow=rows.map(r=>{cash+=r.saved;return cash;});
+  const table=`<div class="ol-wrap"><table class="ol">${head}
+    ${line('Income',r=>fmt0(r.income))}
+    ${line('Essentials',r=>fmt0(r.ess)+pct(r.ess,r))}
+    ${line('Lifestyle',r=>fmt0(r.life)+pct(r.life,r))}
+    ${line('Investing',r=>fmt0(r.invested)+(r.sobhaAssumed?'<sup>*</sup>':''))}
+    ${line('Saved (cash)',r=>`<b class="${r.saved>=0?'green':'red'}">${fmt0(r.saved)}</b>`,'ol-strong')}
+    <tr><td>Cash at month end</td>${cashRow.map(v=>`<td>${fmt0(v)}</td>`).join('')}</tr>
+  </table></div>`;
+  const notes=[];
+  notes.push(`Typical month = your average of ${b.months.map(x=>mShort(x.y,x.m)).join(', ')}, without device instalments. Entries you already logged for those months and your planned changes come on top.`);
+  if(rows.some(r=>r.sobhaAssumed))notes.push('* Includes the €1,500 Sobha installment, assumed to continue. Set an end month in Planned changes when you know it.');
+  const tech=rows.reduce((s,r)=>s+r.tech,0);
+  if(tech>0)notes.push(`Device instalments still logged for these months: ${fmt0(tech)}. If you paid them early, remove them in Expense details.`);
+  const miss=[...new Set(rows.flatMap(r=>r.planMissing))];
+  if(miss.length)notes.push(`Not counted until you add an amount: ${miss.map(esc).join(', ')}.`);
+  const avgSaved=rows.reduce((s,r)=>s+r.saved+r.planOnce,0)/rows.length,avgInc=rows.reduce((s,r)=>s+r.income,0)/rows.length;
+  const once=rows.flatMap(r=>r.onceItems.map(p=>`${esc(p.name)} ${fmt0(p.amount)} (${mShort(r.y,r.m)})`));
+  const onceExp=rows.reduce((s,r)=>s+r.onceItems.filter(p=>p.cat!=='Sobha').reduce((t,p)=>t+p.amount,0),0)/rows.length;
+  const exp=rows.reduce((s,r)=>s+r.ess+r.life,0)/rows.length-onceExp;
+  const verdict=avgInc>0?`<div class="ol-verdict">Recurring expenses projected at <b>${Math.round(exp/avgInc*100)}%</b> of income vs your ${tg.exp}% ceiling; cash saved about <b>${fmt0(avgSaved)}</b> a month before one-offs.${once.length?' One-offs: '+once.join(', ')+'.':''}</div>`:'';
+  return verdict+table+`<div class="coach-note">${notes.join('<br>')}</div>`;
+}
+
+// ── Safety cushion: free cash vs 6 months of spending, looking ahead ─
+function cushionData(){
+  const b=baseline();const cash=cashEUR();const now=new Date();
+  const ym0=ymStr(now.getFullYear(),now.getMonth()),a12=monthAdd(now.getFullYear(),now.getMonth(),12),ym12=ymStr(a12.y,a12.m);
+  const plans=getPlanned();
+  const ear=plans.filter(p=>p.kind==='once'&&p.amount>0&&p.start>=ym0&&p.start<=ym12);
+  const earTot=ear.reduce((s,p)=>s+p.amount,0);
+  // Highest monthly planned addition in the next 6 months (e.g. the nanny once it starts)
+  let addMax=0,addEss=0;
+  for(let k=1;k<=6;k++){const a=monthAdd(now.getFullYear(),now.getMonth(),k);let t=0,e=0;plannedIn(a.y,a.m).forEach(p=>{if(p.kind==='monthly'&&p.amount>0&&p.cat!=='Sobha'){t+=p.amount;if(catClass(p.cat)==='essential')e+=p.amount;}});if(t>addMax){addMax=t;addEss=e;}}
+  const base=b?b.ess+b.life+addMax:0,essBase=b?b.ess+addEss:0;
+  const free=cash-earTot;
+  return{b,cash,ear,earTot,free,base,essBase,addMax,need:base*6,months:base>0?free/base:null,essMonths:essBase>0?free/essBase:null,missing:plans.filter(p=>!(p.amount>0))};
+}
+function cushionHtml(){
+  const c=cushionData();
+  if(!c.b)return '<div class="empty">Needs at least one complete month of entries.</div>';
+  const out=[];const row=(l,v)=>out.push(`<div class="flat-stat"><span class="flat-stat-label">${l}</span><span class="flat-stat-val">${v}</span></div>`);
+  if(c.cash<1)return '<div class="coach-note" style="margin:0;">Add your bank balances in Wealth first. IBKR does not count: a cushion must not depend on markets.</div>';
+  row('Cash in bank',fmt0(c.cash));
+  c.ear.forEach(p=>row('Set aside: '+esc(p.name)+`<span class="fs-sub">${p.start}</span>`,'-'+fmt0(p.amount)));
+  row('<b>Free cash</b>',`<b>${fmt0(c.free)}</b>`);
+  row('Monthly spending'+(c.addMax>0?`<span class="fs-sub">incl. ${fmt0(c.addMax)} planned</span>`:''),fmt0(c.base));
+  row('Target: 6 months',fmt0(c.need));
+  const m=c.months;
+  const gap=c.free-c.need;
+  const verdict=m===null?'':gap>=0
+    ?`<div class="cush-verdict good">Covers <b>${m.toFixed(1)} months</b>. ${gap>2000?`${fmt0(gap)} sits above the cushion: candidate for IBKR, after anything else you know is coming.`:'On target.'}</div>`
+    :`<div class="cush-verdict warn">Covers <b>${m.toFixed(1)} months</b> of spending (${c.essMonths!==null?c.essMonths.toFixed(1)+' months of essentials only':''}). ${fmt0(-gap)} short of 6 months: route cash savings here before extra investing.</div>`;
+  const miss=c.missing.length?`<div class="coach-note">Not counted until you add an amount: ${c.missing.map(p=>esc(p.name)).join(', ')}.</div>`:'';
+  return verdict+out.join('')+`<div class="coach-note">Cash only, minus money already set aside in Planned changes. Spending base: your typical month plus planned monthly costs starting within 6 months.</div>`+miss;
+}
+
+// ── Expense mix: essentials vs lifestyle, last 4 months ───────────
+function mixHtml(){
+  const now=new Date();const tg=getAllocTargets();
+  const ms=recentMonths(4,now.getFullYear(),now.getMonth());
+  if(!ms.length)return '<div class="empty">Needs at least one complete month of entries.</div>';
+  const pct=(v,x)=>x.income>0?Math.round(v/x.income*100)+'%':'—';
+  const head=`<tr><th></th>${ms.map(x=>`<th>${mShort(x.y,x.m)}</th>`).join('')}</tr>`;
+  const line=(label,f,cls)=>`<tr class="${cls||''}"><td>${label}</td>${ms.map(x=>`<td>${f(x)}</td>`).join('')}</tr>`;
+  const table=`<div class="ol-wrap"><table class="ol">${head}
+    ${line('Essentials',x=>fmt0(x.ess)+`<div class="muted">${pct(x.ess,x)}</div>`)}
+    ${line('Lifestyle',x=>fmt0(x.life-x.techL)+`<div class="muted">${pct(x.life-x.techL,x)}</div>`)}
+    ${line('Device instalments',x=>x.techE+x.techL>0?fmt0(x.techE+x.techL):'—')}
+    ${line('All expenses',x=>`<b>${fmt0(x.spent)}</b><div class="muted">${pct(x.spent,x)}</div>`,'ol-strong')}
+  </table></div>`;
+  const n=ms.length,mi=ms.filter(x=>x.income>0),inc=mi.reduce((s,x)=>s+x.income,0);
+  const eP=inc>0?mi.reduce((s,x)=>s+x.ess,0)/inc*100:0,lP=inc>0?mi.reduce((s,x)=>s+x.life-x.techL,0)/inc*100:0;
+  // Biggest lifestyle categories over the period (without device instalments)
+  const cat={};ms.forEach(x=>Object.entries(x.cats).forEach(([c,v])=>{if(catClass(c)!=='lifestyle')return;cat[c]=(cat[c]||0)+(v-((x.techCats||{})[c]||0))/n;}));
+  const top=Object.entries(cat).filter(([,v])=>v>=1).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  const ess={};ms.forEach(x=>Object.entries(x.cats).forEach(([c,v])=>{if(catClass(c)!=='essential')return;ess[c]=(ess[c]||0)+v/n;}));
+  const topE=Object.entries(ess).filter(([,v])=>v>=1).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  return `<div class="ol-verdict">Over ${mi.length} month${mi.length>1?'s':''} with income: essentials <b>${Math.round(eP)}%</b> of income (target ≤${tg.ess}%), lifestyle <b>${Math.round(lP)}%</b> (target ≤${tg.life}%).</div>`+table+
+    `<div class="mix-top"><div><div class="coach-h">Essentials, monthly avg</div>${topE.map(([c,v])=>`<div class="mix-line"><span>${esc(catLabel(c))}</span><b>${fmt0(v)}</b></div>`).join('')||'<div class="muted">—</div>'}</div>
+     <div><div class="coach-h">Lifestyle, monthly avg</div>${top.map(([c,v])=>`<div class="mix-line"><span>${esc(catLabel(c))}</span><b>${fmt0(v)}</b></div>`).join('')||'<div class="muted">—</div>'}</div></div>`+
+    `<div class="coach-note">Device instalments shown apart: they pay for earlier purchases. Change which categories count as essential in Edit targets and budgets.</div>`;
+}
+
+// ── Forward-looking coach lines ───────────────────────────────────
+function aheadItems(){
+  const out=[];const tg=getAllocTargets();const now=new Date();
+  const ms=recentMonths(4,now.getFullYear(),now.getMonth()).filter(x=>x.income>0);
+  if(ms.length){
+    const inc=ms.reduce((s,x)=>s+x.income,0);
+    const lP=inc>0?ms.reduce((s,x)=>s+x.life-x.techL,0)/inc*100:0,eP=inc>0?ms.reduce((s,x)=>s+x.ess,0)/inc*100:0;
+    const lAvg=ms.reduce((s,x)=>s+x.life-x.techL,0)/ms.length;
+    if(lP>tg.life+1)out.push({k:'warn',t:`Lifestyle has averaged <b>${Math.round(lP)}%</b> of income over ${ms.length} month${ms.length>1?'s':''} vs your ${tg.life}%: about ${fmt0(lAvg-inc/ms.length*tg.life/100)} a month above. This, not essentials, is where the 50% gets decided.`});
+    else if(inc>0)out.push({k:'good',t:`Lifestyle at <b>${Math.round(lP)}%</b> of income over ${ms.length} months, within your ${tg.life}%.`});
+    if(eP>tg.ess+1)out.push({k:'info',t:`Essentials at <b>${Math.round(eP)}%</b> of income vs ${tg.ess}%. Fixed costs move slowly; the lever is lifestyle.`});
+  }
+  // Prepaid device plans
+  const pre=transactions.filter(t=>isPrepayment(t)&&new Date(t.date)<=now);
+  if(pre.length){
+    const tot=pre.reduce((s,t)=>s+t.amount,0);const months=[...new Set(pre.map(t=>mShort(new Date(t.date).getFullYear(),new Date(t.date).getMonth())))];
+    const stillLogged=scheduledSeries().filter(s=>DEVICE_RE.test(s.name));
+    out.push({k:'good',t:`Device plans paid early: <b>${fmt0(tot)}</b> (${months.join(', ')}). The coming months carry no device payments${stillLogged.length?' once you remove the ones still logged (Expense details)':''}. If the plans were interest-free this saves no money; it buys simpler months just as childcare costs begin. Fair call with your cash position.`});
+  }
+  // Childcare and other planned monthly costs
+  const plans=getPlanned();const b=baseline();
+  plans.filter(p=>p.kind==='monthly'&&p.cat!=='Sobha').forEach(p=>{
+    if(!(p.amount>0)){out.push({k:'info',t:`<b>${esc(p.name)}</b> is planned without an amount. Add your figure in Planned changes to see its effect.`});return;}
+    if(!b||!(b.income>0))return;
+    const essNew=(b.ess+p.amount)/b.income*100,lifeRoom=tg.exp-essNew;
+    const [py,pm]=p.start.split('-').map(Number);
+    out.push({k:essNew+b.life/b.income*100>tg.exp?'warn':'info',t:`From ${new Date(py,pm-1,1).toLocaleString('default',{month:'short',year:'numeric'})}, <b>${esc(p.name)}</b> (${fmt0(p.amount)}) lifts essentials to about <b>${Math.round(essNew)}%</b> of income. To keep expenses within ${tg.exp}%, lifestyle has room for ${Math.max(0,Math.round(lifeRoom))}% (${fmt0(Math.max(0,b.income*lifeRoom/100))} a month) vs ${fmt0(b.life)} today.`});
+  });
+  if(!plans.some(p=>p.cat==='Childcare'))out.push({k:'info',t:`Childcare is not in your plan yet. When you know the nanny's start month and cost, add them in Planned changes; I will not guess the amount.`});
+  // Outlook and cushion
+  const o=outlook();
+  if(o){const s=o.rows.reduce((t,r)=>t+r.saved+r.planOnce,0)/o.rows.length;const once=o.rows.flatMap(r=>r.onceItems.map(p=>`${esc(p.name)} ${fmt0(p.amount)} in ${mShort(r.y,r.m)}`));out.push({k:s>=0?'info':'warn',t:`Next 3 months on your current pattern: about <b>${fmt0(s)}</b> a month left in cash after investing${once.length?`, before one-offs (${once.join(', ')})`:''}.`});}
+  const c=cushionData();
+  if(c.b&&c.cash>=1&&c.months!==null){
+    const gap=c.free-c.need;
+    out.push(gap>=0?{k:'good',t:`Safety cushion: free cash covers <b>${c.months.toFixed(1)} months</b> of spending${c.earTot>0?` after setting aside ${fmt0(c.earTot)}`:''}.${gap>2000?` About ${fmt0(gap)} above 6 months is idle; invest it once known costs are covered.`:''}`}
+      :{k:'warn',t:`Safety cushion: free cash covers <b>${c.months.toFixed(1)} months</b> of spending vs 6. ${fmt0(-gap)} to go before extra investing.`});
+  }
+  return out;
 }
 
 // ── Portfolio ──────────────────────────────────────────────────────
