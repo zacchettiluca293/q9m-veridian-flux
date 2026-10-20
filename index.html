@@ -518,7 +518,7 @@
     </div>
     <div style="height:12px;"></div>
     <label for="tx-desc">Description</label>
-    <input id="tx-desc" type="text" autocomplete="off" autocapitalize="sentences" placeholder="e.g. Rewe, weekly shop" oninput="descSuggest(this.value)" onchange="descPick(this.value,false)">
+    <input id="tx-desc" type="text" autocomplete="off" autocapitalize="sentences" placeholder="e.g. Rewe, weekly shop" oninput="descSuggest(this.value)">
     <div class="sugg" id="tx-sugg"></div>
     <div class="row">
       <div><label for="tx-cat">Category</label><select id="tx-cat" onchange="onCategoryChange(this.value,true)"></select></div>
@@ -698,7 +698,7 @@
     <div class="port-current-val" id="crypto-total" style="font-size:28px;">—</div>
     <div class="small" id="crypto-updated" style="color:var(--text2);margin:2px 0 6px;">Loading prices</div>
     <div id="crypto-exchanges"></div>
-    <details class="more" id="edit-crypto-wrap" ontoggle="if(this.open)renderEditCryptoList()"><summary>Edit holdings</summary>
+    <details class="more" id="edit-crypto-wrap" ontoggle="cryptoEditToggle(this.open)"><summary>Edit holdings</summary>
       <div class="edit-panel" id="edit-crypto">
         <p class="note" style="margin:0 0 10px;">Change quantities, add or remove coins per exchange. Saved as you type.</p>
         <div id="edit-crypto-list"></div>
@@ -949,7 +949,7 @@
   </div>
 </div>
 <script>
-const APP_VERSION='2026-10-16 r6';
+const APP_VERSION='2026-10-19 r7';
 // Sobha: exactly one installment per month counts as investing, capped at EUR 1,500. Everything else paid to Sobha is an expense (Sobha bills & fees).
 const SOBHA_CAP=1500,SOBHA_MIN=1455;
 const APP_ID='luca',RAW_NS='fos_';
@@ -1605,30 +1605,33 @@ function descIndex(){
   });
   return map;
 }
+// Suggestions update only while typing. Nothing changes on screen when the field loses focus,
+// so a tap on a suggestion (or on Add entry) always lands where the finger is.
 function descSuggest(q){
   const box=document.getElementById('tx-sugg');if(!box)return;
   q=(q||'').trim().toLowerCase();
   if(q.length<2){box.innerHTML='';return;}
   if(!_descIdx)_descIdx=descIndex();
+  // A description typed in full takes its category at once, unless you picked a category yourself.
+  const exact=_descIdx.get(q);
+  if(exact&&!catTouched)applyDescMemory(exact);
   const hits=[];
   _descIdx.forEach((o,k)=>{if(k!==q&&k.includes(q))hits.push({o,score:(k.startsWith(q)?1e6:0)+o.n});});
   hits.sort((a,b)=>b.score-a.score||b.o.last.localeCompare(a.o.last));
-  box.innerHTML=hits.slice(0,4).map(({o})=>`<button type="button" class="sugg-chip" data-desc="${_attr(o.desc)}" onclick="descPick(this.dataset.desc,true)">${esc(o.desc)} <span>${esc(catLabel(o.cat))}</span></button>`).join('');
+  box.innerHTML=hits.slice(0,4).map(({o})=>`<button type="button" class="sugg-chip" data-desc="${_attr(o.desc)}" onclick="descPick(this.dataset.desc)">${esc(o.desc)} <span>${esc(catLabel(o.cat))}</span></button>`).join('');
 }
-function descPick(desc,fromChip){
-  const box=document.getElementById('tx-sugg');if(box)box.innerHTML='';
-  const inp=document.getElementById('tx-desc');
-  if(fromChip&&inp)inp.value=desc;
-  if(!_descIdx)_descIdx=descIndex();
-  const o=_descIdx.get(String(desc||'').trim().toLowerCase());
-  if(!o||(!fromChip&&catTouched))return;
+function applyDescMemory(o){
   if(o.kind!==txKind)setKind(o.kind);
   const sel=document.getElementById('tx-cat');
-  if(sel&&[...sel.options].some(op=>op.value===o.cat)){
-    sel.value=o.cat;onCategoryChange(o.cat,false);
-    if(o.cat!=='Sobha')setKindHint(txKind,o.cat,`${KIND_HINT[txKind]}. Category taken from your last "${o.desc}" entry.`);
-  }
-  if(fromChip){const a=document.getElementById('tx-amount');if(a&&!a.value)a.focus();}
+  if(sel&&sel.value!==o.cat&&[...sel.options].some(op=>op.value===o.cat)){sel.value=o.cat;onCategoryChange(o.cat,false);}
+}
+function descPick(desc){
+  const inp=document.getElementById('tx-desc');if(inp)inp.value=desc;
+  const box=document.getElementById('tx-sugg');if(box)box.innerHTML='';
+  if(!_descIdx)_descIdx=descIndex();
+  const o=_descIdx.get(String(desc||'').trim().toLowerCase());
+  if(o)applyDescMemory(o);
+  const a=document.getElementById('tx-amount');if(a&&!a.value)a.focus();
 }
 function logTransaction(){
   const amount=parseFloat(document.getElementById('tx-amount').value);
@@ -3441,7 +3444,7 @@ async function fetchCryptoCompare(syms){
   return out;
 }
 async function refreshCryptoPrices(){
-  const statusEl=document.getElementById('crypto-updated');
+  const statusEl=cryptoEditing?null:document.getElementById('crypto-updated');
   const need=neededSymbols();
   if(!need.length){updateCryptoDisplay();return true;}
   if(statusEl)statusEl.textContent='Fetching live prices';
@@ -3473,12 +3476,22 @@ function calcCryptoValue(){
   return t;
 }
 function unpricedSymbols(){const out=new Set();Object.values(cryptoHoldings||{}).forEach(a=>(a||[]).forEach(c=>{if(c&&c.symbol&&+c.qty>0&&!priceOf(c.symbol))out.add(String(c.symbol));}));return [...out];}
+// While holdings are being edited, the list above the editor stays hidden and the status line stays put,
+// so nothing moves under your finger between fields. Everything refreshes when the editor closes.
+let cryptoEditing=false;
+function cryptoEditToggle(open){
+  cryptoEditing=!!open;
+  const list=document.getElementById('crypto-exchanges');if(list)list.style.display=open?'none':'';
+  if(open)renderEditCryptoList();
+  else{updateCryptoDisplay();if(neededSymbols().some(s=>!cryptoPrices[s]))refreshCryptoPrices().catch(()=>{});}
+}
 function updateCryptoDisplay(failed){
   const total=calcCryptoValue();
   wealth.cryptoLive=total;
   localStorage.setItem('fos_wealth',JSON.stringify(wealth));
   const totalEl=document.getElementById('crypto-total');
   if(totalEl)totalEl.textContent=fmt0(total);
+  if(cryptoEditing){updateNetWorthOnly();return;}
   const updEl=document.getElementById('crypto-updated');
   if(updEl&&!failed){
     const miss=unpricedSymbols();
@@ -3539,7 +3552,6 @@ function updateCoinSymbol(ei,i,sym){
   const v=String(sym||'').trim();
   cryptoHoldings[ex][i].symbol=/[a-z]/.test(v)&&/[A-Z]/.test(v)?v:v.toUpperCase();
   saveCrypto();updateCryptoDisplay();
-  if(neededSymbols().some(s=>!cryptoPrices[s]))refreshCryptoPrices().catch(()=>{});
 }
 function updateCoinQty(ei,i,qty){
   const ex=exNames()[ei];if(!ex||!cryptoHoldings[ex]||!cryptoHoldings[ex][i])return;
@@ -3636,24 +3648,33 @@ function renderPhasesList(){
       <div class="phase-row-header"><select aria-label="Country" onchange="updatePhase(${i},'country',this.value)">${countryOpts}</select><button class="x-btn" onclick="removePhase(${i})" aria-label="Remove period">×</button></div>
       <div class="phase-grid">
         <div><label>From</label><input type="number" inputmode="numeric" value="${ph.startYear}" min="2020" max="2080" onchange="updatePhase(${i},'startYear',parseInt(this.value)||${CURRENT_YEAR})"></div>
-        <div><label>Until</label><select onchange="updatePhaseEnd(${i},this.value)">${[...Array(40)].map((_,k)=>{const y=ph.startYear+k+1;return `<option value="${y}" ${ph.endYear===y?'selected':''}>${y}</option>`;}).join('')}<option value="until-retire" ${ph.endYear===null?'selected':''}>Until free</option></select></div>
+        <div><label>Until</label><select class="phase-until" onchange="updatePhaseEnd(${i},this.value)">${untilOptions(ph)}</select></div>
       </div>
       <label>Invested each month (€)</label><input type="number" inputmode="decimal" value="${ph.monthly}" min="0" onchange="updatePhase(${i},'monthly',parseFloat(this.value)||0)">
-      <div class="phase-summary">${countryName(ph.country)}, ${ph.endYear===null?'from '+ph.startYear+' until free':ph.startYear+' to '+ph.endYear+' ('+(ph.endYear-ph.startYear)+' years)'}, ${fmt0(ph.monthly)} a month</div>
+      <div class="phase-summary">${phaseSummary(ph)}</div>
     </div>`;
   }).join('')||'<div class="empty">No periods yet.</div>';
+}
+function untilOptions(ph){return [...Array(40)].map((_,k)=>{const y=ph.startYear+k+1;return `<option value="${y}" ${ph.endYear===y?'selected':''}>${y}</option>`;}).join('')+`<option value="until-retire" ${ph.endYear===null?'selected':''}>Until free</option>`;}
+function phaseSummary(ph){return `${countryName(ph.country)}, ${ph.endYear===null?'from '+ph.startYear+' until free':ph.startYear+' to '+ph.endYear+' ('+(ph.endYear-ph.startYear)+' years)'}, ${fmt0(ph.monthly)} a month`;}
+// Edits update their own row in place. Rebuilding the list when a field loses focus would
+// swallow the tap that caused it (on Remove, or on the next field). The list re-sorts next time it opens.
+function refreshPhaseRow(i,withUntil){
+  const row=document.querySelectorAll('#phases-list .phase-row')[i];if(!row||!phases[i])return;
+  const s=row.querySelector('.phase-summary');if(s)s.textContent=phaseSummary(phases[i]);
+  if(withUntil){const u=row.querySelector('.phase-until');if(u)u.innerHTML=untilOptions(phases[i]);}
 }
 function updatePhase(i,field,val){
   if(!phases[i])return;
   phases[i][field]=val;
-  if(field==='startYear'||field==='monthly')renderPhasesList();
-  else savePhases();
+  if(field==='startYear'&&phases[i].endYear!==null&&phases[i].endYear<=val)phases[i].endYear=val+1;
+  savePhases();refreshPhaseRow(i,field==='startYear');
   updateFreedom();
 }
 function updatePhaseEnd(i,val){
   if(!phases[i])return;
   phases[i].endYear=val==='until-retire'?null:parseInt(val);
-  savePhases();renderPhasesList();
+  savePhases();refreshPhaseRow(i,false);
   updateFreedom();
 }
 function addPhase(){
