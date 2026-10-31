@@ -443,6 +443,15 @@
   /* Private mode: amounts blur until private mode is off. Press and hold a big number to peek. */
   .private-mode .mom,.private-mode .bar-note,.private-mode .alloc-legend .note,.private-mode .metric-value,.private-mode .tile-split b,.private-mode .ar-pct,.private-mode .ar-amt,.private-mode .ar-prev,.private-mode .kept b,.private-mode .bar-amt,.private-mode .tx-amount,.private-mode .day-total,.private-mode .search-sum,.private-mode .nw-total,.private-mode .asset-val,.private-mode .asset-pct,.private-mode .port-current-val,.private-mode .port-stat-val,.private-mode .port-gain-line,.private-mode .pos-val,.private-mode .pos-pnl,.private-mode .pos-detail,.private-mode .pos-allocation,.private-mode .flat-stat-val,.private-mode .proj-val,.private-mode .retire-target,.private-mode .crypto-val,.private-mode .coin-row .muted,.private-mode .cash-total-val,.private-mode .signal,.private-mode .ol,.private-mode .det-list,.private-mode .tg-val,.private-mode .tg-sr b,.private-mode .mix-line b,.private-mode .plan-row b,.private-mode .cls-head b,.private-mode .reval-main,.private-mode .split-legend b,.private-mode .fi-start-total b,.private-mode .ol-verdict b,.private-mode .cush-verdict b,.private-mode .coach-note b,.private-mode #crypto-total,.private-mode #port-fx{filter:blur(8px);user-select:none;transition:filter .15s;}
   .private-mode .metric-value:active,.private-mode .nw-total:active,.private-mode .port-current-val:active,.private-mode .asset-val:active,.private-mode .tx-amount:active{filter:none;}
+  .act-head{font-size:15px;line-height:1.5;color:var(--text);padding:0 0 12px;border-bottom:0.5px solid var(--border);}
+  .act-head .tg-bar{margin:10px 0 6px;}
+  .act-body{flex:1;min-width:0;}
+  .act-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+  .card .btn-sm.act-done{background:transparent;color:var(--text2);padding-left:8px;padding-right:8px;}
+  .link-btn{background:none;border:none;padding:0;color:var(--blue);font:inherit;cursor:pointer;}
+  .fb-how{margin:0 0 8px;}
+  .how-list{margin:2px 0 8px;padding-left:18px;font-size:13.5px;line-height:1.5;color:var(--text2);}
+  .how-list li{margin:6px 0;}
 </style>
 </head>
 <body>
@@ -513,7 +522,7 @@
   <div class="card">
     <label for="tx-amount">Amount</label>
     <div class="amount-row">
-      <input id="tx-amount" type="number" inputmode="decimal" step="0.01" placeholder="0.00">
+      <input id="tx-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
       <select id="tx-cur" aria-label="Currency"><option value="EUR">EUR</option><option value="AED">AED</option><option value="USD">USD</option></select>
     </div>
     <div style="height:12px;"></div>
@@ -573,8 +582,19 @@
     <button data-seg="ahead" onclick="fbSeg('ahead')">Ahead</button>
     <button data-seg="claude" onclick="fbSeg('claude')">Claude</button>
   </div>
+  <details class="more fb-how" id="fb-how"><summary>How this works</summary>
+    <ul class="how-list">
+      <li><b>This month</b> and <b>Ahead</b> are worked out on this phone from your entries, each time you open them. Add or edit an entry and they change. Nothing leaves the phone.</li>
+      <li>Yardsticks: your own last 3 months at the same day of the month, your targets and your budgets (Targets, Edit).</li>
+      <li><b>Action plan</b> lists what is worth doing now, each with the button that does it. Done hides an item for the rest of the month.</li>
+      <li>The <b>Claude</b> tab holds Claude's written review. It stays as it is until you import the next file from Claude.</li>
+      <li>Export only for that review, once a month: Export data for Claude, send the file, import the file Claude sends back. That file can also update your portfolio and the flat value.</li>
+      <li>A new app version changes rules and wording, never your data.</li>
+    </ul>
+  </details>
   <div class="fb-pane" id="fb-pane-month">
     <div class="fb-monthbar"><button class="btn-sm" onclick="fbShift(-1)" aria-label="Previous month">‹</button><div class="mb-mid"><div id="fb-month">—</div><div id="fb-month-sub"></div></div><button class="btn-sm" onclick="fbShift(1)" aria-label="Next month">›</button></div>
+    <div class="card" id="fb-plan-card"><div class="card-title">Action plan</div><div id="fb-plan"></div></div>
     <div class="card"><div class="card-head"><div class="card-title">Targets</div><button class="btn-sm" onclick="openBudgets()">Edit</button></div><div id="fb-targets"></div></div>
     <div class="card"><div class="card-title">Coach</div><div id="fb-coach"></div></div>
     <div class="card"><div class="card-title">Expense details</div><div id="fb-details"></div></div>
@@ -929,7 +949,7 @@
     </div>
     <label for="edit-tx-amount">Amount</label>
     <div class="amount-row">
-      <input id="edit-tx-amount" type="number" inputmode="decimal" step="0.01" placeholder="0.00">
+      <input id="edit-tx-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
       <select id="edit-tx-cur" aria-label="Currency"><option value="EUR">EUR</option><option value="AED">AED</option><option value="USD">USD</option></select>
     </div>
     <div class="note" id="edit-fx-note" style="margin:6px 0 10px;"></div>
@@ -949,7 +969,7 @@
   </div>
 </div>
 <script>
-const APP_VERSION='2026-10-19 r7';
+const APP_VERSION='2026-10-31 r8';
 // Sobha: exactly one installment per month counts as investing, capped at EUR 1,500. Everything else paid to Sobha is an expense (Sobha bills & fees).
 const SOBHA_CAP=1500,SOBHA_MIN=1455;
 const APP_ID='luca',RAW_NS='fos_';
@@ -979,6 +999,7 @@ document.addEventListener('pointerdown',e=>{
 
 // ── State ──────────────────────────────────────────────────────────
 let txType='expense';
+let txVer=0;
 // Private mode: hides all monetary values until toggled off. Persisted across sessions.
 let privateMode=localStorage.getItem('fos_private')==='1';
 
@@ -1471,12 +1492,33 @@ function toEUR(price,cur){
 // Dates typed in the app are calendar days: read them as local days, never as UTC midnight.
 function pd(s){if(s instanceof Date)return new Date(s.getTime());const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s==null?'':s).trim());return m?new Date(+m[1],+m[2]-1,+m[3]):new Date(s);}
 function todayStr(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+// Calendar days from a moment to today: Friday's close read on Saturday morning is 1 day old, not "today".
+function daysSince(ts){if(!ts)return Infinity;const a=new Date(ts);if(isNaN(a))return Infinity;a.setHours(0,0,0,0);const b=new Date();b.setHours(0,0,0,0);return Math.round((b-a)/86400000);}
+function agoTxt(ts){const d=daysSince(ts);return d===Infinity?'date unknown':d<=0?'today':d===1?'yesterday':d+' days ago';}
+// Amounts typed as 12.50 or 12,50 (phones set to a comma region), with or without thousands marks.
+function parseAmt(v){
+  let s=String(v==null?'':v).trim().replace(/[\s '’]/g,'');if(!s)return NaN;
+  const c=(s.match(/,/g)||[]).length,d=(s.match(/\./g)||[]).length;
+  if(c&&d){if(s.lastIndexOf(',')>s.lastIndexOf('.'))s=s.replace(/\./g,'').replace(',','.');else s=s.replace(/,/g,'');}
+  else if(c>1)s=s.replace(/,/g,'');
+  else if(d>1)s=s.replace(/\./g,'');
+  else if(c===1)s=s.replace(',','.');
+  const n=Number(s);return isFinite(n)?n:NaN;
+}
 const fmtD=d=>{d=pd(d);return isNaN(d)?'':d.getDate()+' '+MS[d.getMonth()];};
 const fmtDY=d=>{d=pd(d);return isNaN(d)?'':d.getDate()+' '+MS[d.getMonth()]+' '+d.getFullYear();};
 const fmtMY=(y,m)=>{const d=new Date(y,m,1);return MS[d.getMonth()]+' '+d.getFullYear();};
 const fmtDT=iso=>{const d=new Date(iso);return isNaN(d)?'':d.getDate()+' '+MS[d.getMonth()]+', '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
 
 document.getElementById('tx-date').value=todayStr();
+let _today=todayStr();
+function dayRollover(){
+  const t=todayStr();if(t===_today)return false;
+  const prev=pd(_today);
+  const dt=document.getElementById('tx-date');if(dt&&dt.value===_today)dt.value=t;
+  if(viewYear===prev.getFullYear()&&viewMonth===prev.getMonth()){const n=new Date();viewYear=n.getFullYear();viewMonth=n.getMonth();}
+  _today=t;return true;
+}
 const savedKey=localStorage.getItem('fos_apikey');
 if(savedKey)document.getElementById('api-key-input').value=savedKey;
 
@@ -1634,7 +1676,7 @@ function descPick(desc){
   const a=document.getElementById('tx-amount');if(a&&!a.value)a.focus();
 }
 function logTransaction(){
-  const amount=parseFloat(document.getElementById('tx-amount').value);
+  const amount=parseAmt(document.getElementById('tx-amount').value);
   const txCur=document.getElementById('tx-cur').value;
   const desc=document.getElementById('tx-desc').value.trim();
   const cat=document.getElementById('tx-cat').value;
@@ -1649,7 +1691,7 @@ function logTransaction(){
     prepay:txKind==='expense'&&document.getElementById('prepay-check').checked
   });
   localStorage.setItem('fos_tx',JSON.stringify(transactions));
-  _descIdx=null;catTouched=false;
+  _descIdx=null;catTouched=false;txVer++;
   document.getElementById('prepay-check').checked=false;
   document.getElementById('tx-amount').value='';
   document.getElementById('tx-desc').value='';
@@ -1712,7 +1754,7 @@ function saveEditTx(){
   const idx=transactions.findIndex(t=>t.id===editingTxId);
   if(idx<0)return;
   const old=transactions[idx];
-  const amount=parseFloat(document.getElementById('edit-tx-amount').value);
+  const amount=parseAmt(document.getElementById('edit-tx-amount').value);
   if(!(amount>0)){alert('Enter an amount above zero.');return;}
   const cur=document.getElementById('edit-tx-cur').value;
   const desc=document.getElementById('edit-tx-desc').value.trim();
@@ -1733,7 +1775,7 @@ function saveEditTx(){
     prepay:editKind==='expense'&&document.getElementById('edit-prepay-check').checked
   };
   localStorage.setItem('fos_tx',JSON.stringify(transactions));
-  _descIdx=null;
+  _descIdx=null;txVer++;
   const sob=normalizeSobha();
   closeEditTx();
   refreshAfterEdit();
@@ -1744,7 +1786,7 @@ function deleteEditTx(){
   if(!confirm('Delete this entry? This cannot be undone.'))return;
   transactions=transactions.filter(t=>t.id!==editingTxId);
   localStorage.setItem('fos_tx',JSON.stringify(transactions));
-  _descIdx=null;
+  _descIdx=null;txVer++;
   closeEditTx();
   refreshAfterEdit();
   flash('Entry deleted');
@@ -2086,7 +2128,7 @@ function openBudgets(){
   const tg=getAllocTargets(),bud=getBudgets();
   document.getElementById('tg-exp').value=tg.exp;document.getElementById('tg-inv').value=tg.inv;document.getElementById('tg-sav').value=tg.sav;
   document.getElementById('tg-ess').value=tg.ess;document.getElementById('tg-life').value=tg.life;
-  document.getElementById('budget-rows').innerHTML=EXPENSE_CATS.map(c=>`<div class="budget-row"><span class="tap" data-cat="${_attr(c)}" onclick="toggleCatClass(this)">${catLabel(c)} <span class="cls-pill cls-${catClass(c)}">${catClass(c)==='essential'?'essential':'lifestyle'}</span></span><input type="number" inputmode="decimal" data-cat="${c.replace(/"/g,'&quot;')}" value="${bud[c]>0?bud[c]:''}" placeholder="—"></div>`).join('');
+  document.getElementById('budget-rows').innerHTML=EXPENSE_CATS.map(c=>`<div class="budget-row"><span class="tap" data-cat="${_attr(c)}" onclick="toggleCatClass(this)">${catLabel(c)} <span class="cls-pill cls-${catClass(c)}">${catClass(c)==='essential'?'essential':'lifestyle'}</span></span><input type="text" inputmode="decimal" autocomplete="off" data-cat="${c.replace(/"/g,'&quot;')}" value="${bud[c]>0?bud[c]:''}" placeholder="—"></div>`).join('');
   document.getElementById('budgets-overlay').classList.add('visible');
 }
 function toggleCatClass(el){
@@ -2096,7 +2138,7 @@ function toggleCatClass(el){
   localStorage.setItem('fos_cat_class',JSON.stringify(CAT_CLASS_OV));
   const p=el.querySelector('.cls-pill');if(p){p.className='cls-pill cls-'+nx;p.textContent=nx;}
 }
-function closeBudgets(){document.getElementById('budgets-overlay').classList.remove('visible');}
+function closeBudgets(){document.getElementById('budgets-overlay').classList.remove('visible');renderOverview();if(document.getElementById('screen-feedback').classList.contains('active'))renderFeedback();}
 // Average of up to 3 prior calendar months that contain data (relative to today), per category.
 function historyAverages(n){
   const now=new Date();const out={},cnt={months:0};
@@ -2124,7 +2166,7 @@ function saveBudgets(btn){
   const es=parseFloat(document.getElementById('tg-ess').value),li=parseFloat(document.getElementById('tg-life').value);
   if([es,li].some(x=>isNaN(x)||x<0)||Math.round(es+li)!==Math.round(e)){btnFail(btn,'Essentials + lifestyle must equal '+e);return;}
   const bud={};
-  document.querySelectorAll('#budget-rows input').forEach(inp=>{const v=parseFloat(inp.value);if(v>0)bud[inp.dataset.cat]=v;});
+  document.querySelectorAll('#budget-rows input').forEach(inp=>{const v=parseAmt(inp.value);if(v>0)bud[inp.dataset.cat]=v;});
   localStorage.setItem('fos_budgets',JSON.stringify(bud));
   localStorage.setItem('fos_alloc',JSON.stringify({exp:e,inv:i,sav:s,ess:es,life:li}));
   btnDone(btn,'Saved');
@@ -2141,7 +2183,7 @@ function freedomPhases(){try{return (JSON.parse(localStorage.getItem('fos_phases
 // Invested today: IBKR from Portfolio plus crypto at live prices (crypto can be left out in Freedom).
 function investedToday(f){
   f=f||freedomSettings();
-  const ibkr=Math.max(0,+((wealth&&wealth.broker)||0)),crypto=Math.max(0,+((wealth&&wealth.cryptoLive)||0));
+  const ibkr=ibkrNow(),crypto=Math.max(0,+((wealth&&wealth.cryptoLive)||0));
   const inclCrypto=f.inclCrypto!==false;
   return{ibkr,crypto,inclCrypto,total:ibkr+(inclCrypto?crypto:0)};
 }
@@ -2224,7 +2266,7 @@ const SPEND_RULES=[
     tip:(n,tot,avg)=>avg>12?`About ${fmt0(avg)} per order. Halving the orders and cooking those nights (about €8 a meal) keeps roughly ${fmt0((avg-8)*n/2)} a month.`:''},
   {id:'ride',re:/\buber\b(?!\s*eats)|\bbolt\b|\btaxi|free\s*now|careem(?!\s*food)|\blyft\b/i,label:'Taxis and rides',unit:'rides',lever:'The ride count is the lever.',
     tip:(n,tot)=>n>=3?`${n} rides. Check how many of them a monthly transit pass would have covered.`:''},
-  {id:'train',re:/\btrains?\b|\bzug\b|deutsche\s*bahn|\bbahn\b|\bdb\b|trenitalia|\bitalo\b|frecciarossa|flixtrain|\bice\b|eurostar|sncf|ouigo/i,label:'Trains',unit:'tickets',lever:'Booking time is the lever, not the trip.',
+  {id:'train',re:/\btrains?\b|\bzug\b|deutsche\s*bahn|\bbahn\b|\bdb\b|trenitalia|\bitalo\b|frecciarossa|flixtrain|\bice\s+(?:train|zug|ticket)|eurostar|sncf|ouigo/i,label:'Trains',unit:'tickets',lever:'Booking time is the lever, not the trip.',
     tip:()=>`For planned trips, booking 3 to 6 weeks ahead usually costs less than the final week; DB, Trenitalia and Italo fares climb as seats sell.`},
   {id:'flight',re:/flight|\bflug|\bvolo\b|ryanair|easyjet|lufthansa|emirates|flydubai|wizz|eurowings|airways|airline/i,label:'Flights',unit:'tickets',lever:'Booking time is the lever, not the trip.',
     tip:()=>`Set a fare alert as soon as dates are likely; last-minute fares are where travel budgets break.`},
@@ -2248,9 +2290,21 @@ function ruleHits(entries){
 }
 // Device instalments: monthly plan entries ("iPhone 12/24", "Laptop 18") or payoffs.
 const DEVICE_RE=/(iphone|i-phone|laptop|macbook|mac\s*book|apple\s*watch|ipad|airpods)/i;
+// "iPhone 9/24", "Laptop payoff" or a running series ("Laptop 15", "Laptop 16") are instalments.
+// A single trailing number ("iPhone 17", "AirPods 4", "MacBook Air 13") is a model: a normal purchase.
+let _instSer=null,_instSerVer=-1;
+function instalmentSeries(){
+  if(_instSer&&_instSerVer===txVer)return _instSer;
+  const nums={};
+  transactions.forEach(t=>{const d=t.desc||'';if(!DEVICE_RE.test(d)||/\d+\s*\/\s*\d+/.test(d))return;const m=/\s(\d{1,2})\s*$/.exec(d);if(!m)return;const k=seriesName(d).toLowerCase();(nums[k]=nums[k]||new Set()).add(+m[1]);});
+  _instSer=new Set(Object.keys(nums).filter(k=>nums[k].size>=2));_instSerVer=txVer;
+  return _instSer;
+}
 function isInstalmentDesc(d){
   d=d||'';
-  return DEVICE_RE.test(d)&&(/\d+\s*\/\s*\d+/.test(d)||/\s\d{1,2}\s*$/.test(d)||/pay\s*off|paid\s*off|payoff|remaining|final|instal|\brate\b|klarna|financ/i.test(d));
+  if(!DEVICE_RE.test(d))return false;
+  if(/\d+\s*\/\s*\d+/.test(d)||/pay\s*off|paid\s*off|payoff|remaining|final|instal|\brate\b|klarna|financ/i.test(d))return true;
+  return /\s\d{1,2}\s*$/.test(d)&&instalmentSeries().has(seriesName(d).toLowerCase());
 }
 function seriesName(d){return (d||'').replace(/\s*\d+\s*(\/\s*\d+)?\s*$/,'').trim();}
 function scheduledSeries(){
@@ -2269,7 +2323,7 @@ function removeScheduled(name,btn){
   if(!confirm(`Remove ${s.n} scheduled "${name}" entries (${fmt0(s.tot)}) dated after today? Do this only if it is paid off.`)){btnFail(btn,'Kept');return;}
   const ids=new Set(s.ids);
   transactions=transactions.filter(t=>!ids.has(t.id));
-  localStorage.setItem('fos_tx',JSON.stringify(transactions));
+  localStorage.setItem('fos_tx',JSON.stringify(transactions));txVer++;
   btnDone(btn,'Removed');
   setTimeout(()=>{renderFeedback();},500);
 }
@@ -2422,11 +2476,7 @@ function buildDetails(ctx,co){
     add('info',`<b>Largest entries</b><div class="det-list">${rows}</div><div class="det-tip">Fine if planned. If one was not, notice what triggered it; that is more useful than any budget.</div>`);
   }
   // Possible duplicates: same description and amount within 3 days
-  const dup=[];const seen=entries.slice().sort((a,b)=>a.date.localeCompare(b.date));
-  for(let i=0;i<seen.length;i++)for(let j=i+1;j<seen.length;j++){
-    const a=seen[i],b=seen[j];const dd=(pd(b.date)-pd(a.date))/86400000;if(dd>3)break;
-    if(a.amount===b.amount&&a.cat===b.cat&&(a.desc||'').trim()&&(a.desc||'').trim().toLowerCase()===(b.desc||'').trim().toLowerCase())dup.push([a,b]);
-  }
+  const dup=possibleDuplicates(entries);
   dup.slice(0,3).forEach(([a,b])=>add('warn',`Possible double entry: <b>${esc(a.desc)}</b> ${fmt0(a.amount)} on ${fmtDay(a.date)} and ${fmtDay(b.date)}. Tap the entry in Overview to delete one if so.`));
   // Uncategorised
   const oth=entries.filter(t=>t.cat==='Other');
@@ -2544,6 +2594,7 @@ function renderFeedback(){
   const st=document.getElementById('fb-month-sub');
   if(st)st.textContent=ctx.isCur?`Day ${ctx.day} of ${ctx.dim}, compared at the same day`:ctx.isFuture?'Scheduled entries only':'Full month';
   const co=buildCoach(ctx);
+  const ap=document.getElementById('fb-plan');if(ap)ap.innerHTML=actionPlanHtml(ctx,co);
   document.getElementById('fb-targets').innerHTML=targetsHtml(ctx);
   document.getElementById('fb-coach').innerHTML=coachHtml(co);
   document.getElementById('fb-details').innerHTML=buildDetails(ctx,co);
@@ -2560,13 +2611,140 @@ function aheadHtml(){
   const items=aheadItems();
   return items.map(i=>`<div class="signal"><div class="signal-dot sig-${i.k}"></div><div>${i.t}</div></div>`).join('')||'<div class="empty">Needs at least one complete month of entries.</div>';
 }
+// ── Action plan: the few things worth doing now, each with the button that does it ──
+// Worked out on the phone from the same numbers as the coach. Only the items you mark done are stored.
+function actsDone(){try{return JSON.parse(localStorage.getItem('fos_actions_done')||'{}')||{};}catch(e){return{};}}
+function markActDone(id,btn){
+  const ym=ymStr(viewYear,viewMonth),d=actsDone();
+  d[ym]=[...new Set([...(d[ym]||[]),String(id)])];
+  Object.keys(d).sort().slice(0,-6).forEach(k=>{delete d[k];});
+  localStorage.setItem('fos_actions_done',JSON.stringify(d));
+  btnDone(btn,'Done');
+  setTimeout(()=>{renderFeedback();renderCoachMini();},450);
+}
+function showActsAgain(){const ym=ymStr(viewYear,viewMonth),d=actsDone();delete d[ym];localStorage.setItem('fos_actions_done',JSON.stringify(d));renderFeedback();renderCoachMini();}
+// Lifestyle room: your lifestyle share of income minus what lifestyle has taken so far (device instalments apart).
+function lifestyleRoom(ctx){
+  if(!ctx||ctx.isFuture)return null;
+  const tg=getAllocTargets();
+  const full=ctx.isCur?getMonthData(viewMonth,viewYear):ctx.cur;
+  let inc=full.income,assumed=false;
+  if(!(inc>0)&&ctx.isCur){const b=baseline();if(b&&b.income>0){inc=b.income;assumed=true;}}
+  if(!(inc>0))return null;
+  let techL=0;Object.entries(ctx.cur.techCats||{}).forEach(([c,v])=>{if(catClass(c)==='lifestyle')techL+=v;});
+  const spent=Math.max(0,splitClass(ctx.cur.cats).l-techL),line=inc*tg.life/100,left=line-spent;
+  const daysLeft=ctx.isCur?ctx.dim-ctx.day+1:0;
+  return{tg,inc,assumed,spent,line,left,daysLeft,perDay:daysLeft>0&&left>0?left/daysLeft:0,isCur:ctx.isCur};
+}
+function roomText(r){
+  if(!r)return '';
+  if(!r.isCur)return r.left>=0?`Lifestyle ended at <b>${fmt0(r.spent)}</b>, ${fmt0(r.left)} under your ${r.tg.life}% line of ${fmt0(r.line)}.`:`Lifestyle ended at <b>${fmt0(r.spent)}</b>, <b>${fmt0(-r.left)} over</b> your ${r.tg.life}% line of ${fmt0(r.line)}.`;
+  if(r.left<0)return `Lifestyle is <b>${fmt0(-r.left)} over</b> your ${r.tg.life}% line this month. Every extra euro now comes out of cash saved.`;
+  if(r.daysLeft<=1)return `Lifestyle: <b>${fmt0(r.left)} left</b> for today, the last day of the month.`;
+  const pd1=r.perDay>=100?fmt0(r.perDay):fmt(Math.floor(r.perDay*100)/100);
+  return `Lifestyle: <b>${fmt0(r.left)} left</b> this month, about <b>${pd1} a day</b> for the ${r.daysLeft} days left.`;
+}
+// Same description and amount within 3 days, same category.
+function possibleDuplicates(entries){
+  const dup=[];const seen=entries.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  for(let i=0;i<seen.length;i++)for(let j=i+1;j<seen.length;j++){
+    const a=seen[i],b=seen[j];const dd=(pd(b.date)-pd(a.date))/86400000;if(dd>3)break;
+    if(a.amount===b.amount&&a.cat===b.cat&&(a.desc||'').trim()&&(a.desc||'').trim().toLowerCase()===(b.desc||'').trim().toLowerCase())dup.push([a,b]);
+  }
+  return dup;
+}
+const jsq=v=>_attr(JSON.stringify(String(v)));
+function actionItems(ctx,co){
+  const out=[];if(!ctx||ctx.isFuture)return out;
+  const bud=getBudgets(),entries=monthEntries(ctx),daysLeft=ctx.isCur?ctx.dim-ctx.day+1:0,dl=`${daysLeft} day${daysLeft===1?'':'s'}`;
+  // 1/ Variable spending the coach flags: over budget or ahead of pace; without a budget, well above your usual. Two at most, biggest first.
+  const frac=ctx.isCur?Math.min(1,ctx.day/ctx.dim):1;
+  [...new Set(co.watch.filter(w=>w.c&&DISCRETIONARY.has(w.c)).map(w=>w.c))].map(c=>{
+    const v=(ctx.cur.cats[c]||0)-((ctx.cur.techCats||{})[c]||0),a=(ctx.avg.cats[c]||0)-((ctx.avg.techCats||{})[c]||0),b=bud[c]||0;
+    return{c,v,a,b,gap:b?v-b*frac:v-a};
+  }).filter(x=>x.b?(x.v>x.b+0.5||(ctx.isCur&&x.v/x.b>frac+0.15)):x.v-x.a>=50).sort((x,y)=>y.gap-x.gap).slice(0,2).forEach(({c,v,a,b})=>{
+    const n=entries.filter(t=>t.cat===c).length;
+    let t=`<b>${esc(catLabel(c))}</b> ${fmt0(v)}`+(b?` of the ${fmt0(b)} budget`:a>=1?` vs ${fmt0(a)} usual${ctx.isCur?' by this day':''}`:'')+'. ';
+    if(b&&ctx.isCur)t+=v>b?`${fmt0(v-b)} over: hold it for the ${dl} left.`:`${fmt0(b-v)} left for ${dl}.`;
+    else if(b)t+=v>b?`${fmt0(v-b)} over. Look at the entries and decide which were worth it.`:'Within budget.';
+    else t+=a>=1?`No budget yet: set one near your usual and the app paces it for you.`:'New this month. If it will recur, give it a budget.';
+    const btns=[{l:n?`See ${n} entr${n===1?'y':'ies'}`:'See entries',js:`goEntries('cat',${jsq(c)})`}];
+    if(!b)btns.push({l:'Set budget',js:'openBudgets()'});
+    out.push({id:'cat:'+c,k:'warn',t,btns});
+  });
+  // 2/ IBKR against the monthly plan in Freedom, once the usual day has passed
+  const plan=plannedMonthlyInvest(viewYear),ib=(ctx.cur.invCats||{}).IBKR||0,usual=ibkrUsualDay();
+  if(plan>0&&(!ctx.isCur||!usual||ctx.day>=usual)&&ib<plan-0.5){
+    if(ib<0.5){
+      const last=transactions.filter(t=>t.cat==='IBKR'&&t.type!=='income').sort((x,y)=>String(y.date).localeCompare(String(x.date)))[0];
+      const date=ctx.isCur?todayStr():ymStr(viewYear,viewMonth)+'-'+String(Math.min(usual||28,ctx.dim)).padStart(2,'0');
+      out.push({id:'ibkr',k:'warn',t:`<b>IBKR</b>: nothing logged this month against your ${fmt0(plan)} plan. If the transfer went out, log it; if not, start it.`,btns:[{l:'Log IBKR',js:`prefillLog('invest','IBKR',${+plan.toFixed(2)},${jsq(last&&last.desc||'IBKR')},${jsq(date)})`}]});
+    } else out.push({id:'ibkr',k:'info',t:`<b>IBKR</b> ${fmt0(ib)} against your ${fmt0(plan)} plan: ${fmt0(plan-ib)} short. Raise the recurring amount in IBKR or top up once.`,btns:[]});
+  }
+  // 3/ Possible double entries
+  const dup=possibleDuplicates(entries)[0];
+  if(dup)out.push({id:'dup:'+dup[0].id,k:'warn',t:`Possible double entry: <b>${esc(dup[0].desc)}</b> ${fmt0(dup[0].amount)} on ${fmtD(dup[0].date)} and ${fmtD(dup[1].date)}.`,btns:[{l:'Check',js:`goSearch(${jsq(dup[0].desc)})`}]});
+  // 4/ Entries without a real category
+  const oth=entries.filter(t=>t.cat==='Other');
+  if(oth.length)out.push({id:'other',k:'info',t:`<b>${oth.length} entr${oth.length===1?'y':'ies'} in Other</b> (${fmt0(oth.reduce((s,t)=>s+t.amount,0))}). A real category keeps the trends honest.`,btns:[{l:'Recategorise',js:`goEntries('cat','Other')`}]});
+  // 5/ Device instalments still scheduled although a payoff was logged
+  const paid=transactions.filter(isPrepayment).map(t=>(t.desc||'').toLowerCase());
+  scheduledSeries().filter(s=>DEVICE_RE.test(s.name)&&paid.some(d=>d.includes(s.name.toLowerCase().split(' ')[0]))).slice(0,2).forEach(s=>{
+    out.push({id:'sched:'+s.name,k:'info',t:`<b>${esc(s.name)}</b>: ${s.n} future entries still logged (${fmt0(s.tot)}) after a payoff. Remove them so the outlook is right.`,btns:[{l:'Remove scheduled',js:`removeScheduled(${jsq(s.name)},this)`}]});
+  });
+  if(ctx.isCur){
+    // 6/ Cash: cushion short, or idle above it
+    const c=cushionData();
+    if(c.b&&c.cash<1)out.push({id:'cash',k:'info',t:'Add your bank balances in Wealth. Without them the safety cushion cannot be checked.',btns:[{l:'Open Wealth',js:"showScreen('wealth')"}]});
+    else if(c.b&&c.months!==null){
+      const gap=c.free-c.need;
+      if(gap<0)out.push({id:'cushion',k:'warn',t:`Safety cushion: free cash covers <b>${c.months.toFixed(1)} months</b> of spending vs 6. Send cash savings there before any extra investing.`,btns:[{l:'See cushion',js:"fbSeg('ahead')"}]});
+      else if(gap>2000)out.push({id:'idle',k:'info',t:`<b>${fmt0(gap)}</b> in cash above the 6-month cushion. Earmark money for known plans first (property, travel, a car), then invest the rest.`,btns:[{l:'Earmark',js:"fbSeg('ahead');planPreset('other')"}]});
+    }
+    // 7/ Childcare not planned yet
+    if(!getPlanned().some(p=>p.cat==='Childcare')&&!transactions.some(t=>t.cat==='Childcare'))out.push({id:'nanny',k:'info',t:'Nanny: add start month and monthly cost so the outlook and the cushion include it.',btns:[{l:'Add nanny',js:"fbSeg('ahead');planPreset('nanny')"}]});
+    // 8/ Monthly review with Claude
+    const le=localStorage.getItem('fos_last_export'),ago=le?daysSince(Date.parse(le)):Infinity;
+    if(ago>=28)out.push({id:'export',k:'info',t:le?`Monthly review with Claude: last export ${ago} days ago. Export, send the file to Claude, import the reply.`:'Monthly review with Claude: export your data, send the file to Claude, import the reply.',btns:[{l:'Export data',js:'exportData(this)'}]});
+  }
+  return out;
+}
+function actionPlanHtml(ctx,co){
+  if(!ctx||ctx.isFuture)return '<div class="empty">Future month: nothing to act on yet.</div>';
+  const r=lifestyleRoom(ctx);
+  const done=new Set(actsDone()[ymStr(viewYear,viewMonth)]||[]);
+  const all=actionItems(ctx,co),open=all.filter(a=>!done.has(a.id)),nDone=all.length-open.length;
+  let head='';
+  if(r){
+    const pct=r.line>0?Math.min(100,r.spent/r.line*100):0;
+    head=`<div class="act-head"><div>${roomText(r)}</div><div class="tg-bar"><div class="tg-fill" style="width:${pct.toFixed(1)}%;background:${r.left<0?'var(--red)':'var(--c-life)'}"></div></div><span class="fs-sub">Line: ${r.tg.life}% of ${fmt0(r.inc)} income${r.assumed?' (typical month, since this month\'s income is not logged yet)':''} = ${fmt0(r.line)}. Spent ${fmt0(r.spent)} so far, device instalments apart.</span></div>`;
+  }
+  const rows=open.slice(0,4).map(a=>`<div class="signal act"><div class="signal-dot sig-${a.k}"></div><div class="act-body"><div>${a.t}</div><div class="act-btns">${a.btns.map(b=>`<button class="btn-sm" onclick="${b.js}">${esc(b.l)}</button>`).join('')}<button class="btn-sm act-done" data-id="${_attr(a.id)}" onclick="markActDone(this.dataset.id,this)">Done</button></div></div></div>`).join('');
+  const more=open.length>4?`<div class="coach-note">${open.length-4} more once these are done.</div>`:'';
+  const doneTxt=nDone?`<div class="coach-note">${nDone} marked done this month. <button class="link-btn" onclick="showActsAgain()">Show again</button></div>`:'';
+  return head+(rows||'<div class="empty" style="padding:10px 0 2px;">Nothing to act on right now.</div>')+more+doneTxt;
+}
+// Buttons that take you to the place where the action happens.
+function goEntries(type,v){searchQ='';const s=document.getElementById('tx-search');if(s)s.value='';entryFilter=null;showScreen('overview');setEntryFilter(type,v);}
+function goSearch(q){entryFilter=null;showScreen('overview');const s=document.getElementById('tx-search');if(s)s.value=q;onSearch(q);const c=document.getElementById('entries-card');if(c&&c.scrollIntoView)c.scrollIntoView({behavior:'smooth',block:'start'});}
+function prefillLog(kind,cat,amount,desc,date){
+  showScreen('log');setKind(kind);
+  const sel=document.getElementById('tx-cat');if(sel&&[...sel.options].some(o=>o.value===cat)){sel.value=cat;onCategoryChange(cat,true);}
+  const a=document.getElementById('tx-amount');if(a)a.value=amount>0?String(amount):'';
+  const d=document.getElementById('tx-desc');if(d)d.value=desc||'';
+  const t=document.getElementById('tx-date');if(t&&/^\d{4}-\d{2}-\d{2}$/.test(date||''))t.value=date;
+  flash('Check amount and date, then tap Add entry');
+}
 function renderCoachMini(){
   const el=document.getElementById('coach-mini');if(!el)return;
-  const co=buildCoach(monthCtx());
+  const ctx=monthCtx(),co=buildCoach(ctx);
+  // Current month: lead with the lifestyle money left, the one number that steers the rest of the month.
+  const r=ctx.isCur?lifestyleRoom(ctx):null;
+  const head=r?`<div class="signal"><div class="signal-dot sig-${r.left>=0?'good':'warn'}"></div><div>${roomText(r)}</div></div>`:'';
   const aw=(co.ahead||[]).filter(i=>i.k==='warn').slice(0,1);
-  const pick=[...co.watch.slice(0,2),...aw,...co.next.slice(0,1),...co.wins.slice(0,1)].slice(0,3);
+  const pick=[...co.watch.slice(0,2),...aw,...co.next.slice(0,1),...co.wins.slice(0,1)].slice(0,head?2:3);
   const kind=i=>co.watch.includes(i)?'warn':co.next.includes(i)?'info':aw.includes(i)?'warn':'good';
-  el.innerHTML=pick.map(i=>`<div class="signal"><div class="signal-dot sig-${kind(i)}"></div><div>${i.t}</div></div>`).join('')||'<div class="empty">Nothing to flag. Open Feedback for the full review.</div>';
+  el.innerHTML=head+pick.map(i=>`<div class="signal"><div class="signal-dot sig-${kind(i)}"></div><div>${i.t}</div></div>`).join('')||'<div class="empty">Nothing to flag. Open Feedback for the full review.</div>';
 }
 function fbShift(d){viewMonth+=d;while(viewMonth<0){viewMonth+=12;viewYear--;}while(viewMonth>11){viewMonth-=12;viewYear++;}renderFeedback();}
 function goFeedback(){fbSeg('month');showScreen('feedback');}
@@ -2620,7 +2798,7 @@ function restoreBackup(j,btn){
   if(v2&&j.app&&j.app!==APP_ID&&!confirm(`This backup belongs to the ${j.app} app. Restore it here anyway?`)){btnFail(btn,'Cancelled');return;}
   const when=j.exportedAt||j.exportDate;
   if(!confirm(`Replace the data on this phone with the backup from ${when?fmtDT(when):'an unknown date'}? Your PIN stays as it is.`)){btnFail(btn,'Cancelled');return;}
-  if(v2)Object.entries(j.data||{}).forEach(([k,v])=>{if(!SECRET_KEYS.has(k)&&typeof v==='string'&&/^[a-z0-9_]+$/.test(k))localStorage.setItem('fos_'+k,v);});
+  if(v2){ownKeys().forEach(k=>{if(!SECRET_KEYS.has(k)&&k!=='_ns')localStorage.removeItem('fos_'+k);});Object.entries(j.data||{}).forEach(([k,v])=>{if(!SECRET_KEYS.has(k)&&typeof v==='string'&&/^[a-z0-9_]+$/.test(k))localStorage.setItem('fos_'+k,v);});}
   else{
     const map={transactions:'tx',wealth:'wealth',positions:'positions',cashAccounts:'cash',flat:'flat',cryptoHoldings:'crypto',cryptoPrices:'crypto_prices'};
     Object.entries(map).forEach(([a,k])=>{if(j[a]!=null)localStorage.setItem('fos_'+k,JSON.stringify(j[a]));});
@@ -2656,7 +2834,7 @@ function applyClaudeFile(j,btn){
   const done=[],kept=[];
   if(j.ibkr&&Array.isArray(j.ibkr.positions)&&j.ibkr.positions.length){
     const ts=Date.parse(j.ibkr.asOf)||0;
-    if(positions.length&&posUpdatedTimestamp>ts)kept.push('portfolio (phone has newer data)');
+    if(positions.length&&posUpdatedTimestamp>ts+60000&&!confirm(`This file's portfolio is from ${ts?fmtDY(new Date(ts)):'an unknown date'}, older than the one on this phone (${fmtDY(new Date(posUpdatedTimestamp))}). Replace it anyway?`))kept.push('portfolio (phone has newer data)');
     else{applyIbkrSnapshot(j.ibkr);done.push(j.ibkr.positions.length+' positions');}
   }
   if(j.crypto&&j.crypto.holdings&&typeof j.crypto.holdings==='object'){
@@ -2772,7 +2950,7 @@ function syncPlanKind(){const k=document.getElementById('plan-kind');const e=doc
 function addPlanned(btn){
   const g=id=>(document.getElementById(id)||{}).value||'';
   const name=g('plan-name').trim(),cat=g('plan-cat'),kind=g('plan-kind'),start=g('plan-start'),end=kind==='monthly'?g('plan-end'):'';
-  const amount=parseFloat(g('plan-amount'));
+  const amount=parseAmt(g('plan-amount'));
   if(!name||!/^\d{4}-\d{2}$/.test(start)){btnFail(btn,'Name and month needed');return;}
   const a=getPlanned();a.push({id:Date.now(),name,cat,kind,start,end,amount:amount>0?amount:null});savePlanned(a);
   btnDone(btn,'Added');document.getElementById('plan-form').style.display='none';
@@ -2790,7 +2968,7 @@ function plannedHtml(){
     `<div id="plan-form" class="plan-form" style="display:none;">
       <label>Name</label><input id="plan-name" type="text" placeholder="e.g. Nanny">
       <div class="row"><div><label>Category</label><select id="plan-cat">${PLAN_CATS().map(c=>`<option value="${_attr(c)}">${_attr(catLabel(c))}</option>`).join('')}</select></div>
-      <div><label>Amount (€)</label><input id="plan-amount" type="number" inputmode="decimal" placeholder="your figure"></div></div>
+      <div><label>Amount (€)</label><input id="plan-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="your figure"></div></div>
       <div class="row"><div><label>Type</label><select id="plan-kind" onchange="syncPlanKind()"><option value="monthly">Monthly</option><option value="once">One-off</option></select></div>
       <div><label>From / in month</label><input id="plan-start" type="month"></div></div>
       <div id="plan-end-wrap"><label>Until (optional)</label><input id="plan-end" type="month"></div>
@@ -2931,16 +3109,17 @@ function aheadItems(){
     const inc=ms.reduce((s,x)=>s+x.income,0);
     const lP=inc>0?ms.reduce((s,x)=>s+x.life-x.techL,0)/inc*100:0,eP=inc>0?ms.reduce((s,x)=>s+x.ess-x.techE,0)/inc*100:0;
     const lAvg=ms.reduce((s,x)=>s+x.life-x.techL,0)/ms.length;
-    if(lP>tg.life+1)out.push({k:'warn',t:`Lifestyle has averaged <b>${Math.round(lP)}%</b> of income over ${ms.length} month${ms.length>1?'s':''} vs your ${tg.life}%: about ${fmt0(lAvg-inc/ms.length*tg.life/100)} a month above. This, not essentials, is where the 50% gets decided.`});
+    if(lP>tg.life+1)out.push({k:'warn',t:`Lifestyle has averaged <b>${Math.round(lP)}%</b> of income over ${ms.length} month${ms.length>1?'s':''} vs your ${tg.life}%: about ${fmt0(lAvg-inc/ms.length*tg.life/100)} a month above. This, not essentials, is where the ${tg.exp}% gets decided.`});
     else if(inc>0)out.push({k:'good',t:`Lifestyle at <b>${Math.round(lP)}%</b> of income over ${ms.length} months, within your ${tg.life}%.`});
     if(eP>tg.ess+1)out.push({k:'info',t:`Essentials at <b>${Math.round(eP)}%</b> of income vs ${tg.ess}%. Fixed costs move slowly; the lever is lifestyle.`});
   }
   // Prepaid device plans
-  const pre=transactions.filter(t=>isPrepayment(t)&&pd(t.date)<=now);
+  const since=new Date(now.getFullYear(),now.getMonth()-5,1);
+  const pre=transactions.filter(t=>isPrepayment(t)&&pd(t.date)<=now&&pd(t.date)>=since);
   if(pre.length){
     const tot=pre.reduce((s,t)=>s+t.amount,0);const months=[...new Set(pre.map(t=>mShort(pd(t.date).getFullYear(),pd(t.date).getMonth())))];
     const stillLogged=scheduledSeries().filter(s=>DEVICE_RE.test(s.name));
-    out.push({k:'good',t:`Device plans paid early: <b>${fmt0(tot)}</b> (${months.join(', ')}). The coming months carry no device payments${stillLogged.length?' once you remove the ones still logged (Expense details)':''}. If the plans were interest-free this saves no money; it buys simpler months just as childcare costs begin. Fair call with your cash position.`});
+    out.push({k:'good',t:`Device plans paid early: <b>${fmt0(tot)}</b> (${months.join(', ')}). The coming months carry no device payments${stillLogged.length?' once you remove the ones still logged (Expense details)':''}. If the plans were interest-free, paying early saved nothing; it frees the coming months.`});
   }
   // Childcare and other planned monthly costs
   const plans=getPlanned();const b=baseline();
@@ -2965,6 +3144,11 @@ function aheadItems(){
 }
 
 // ── Portfolio ──────────────────────────────────────────────────────
+// IBKR in euros at today's rates: from the positions when loaded, else the value entered by hand.
+function ibkrNow(){
+  if(positions&&positions.length){const v=Math.round(calcStats().totalValue);if(v!==wealth.broker){wealth.broker=v;try{localStorage.setItem('fos_wealth',JSON.stringify(wealth));}catch(e){}}return v;}
+  return Math.max(0,Math.round(+wealth.broker||0));
+}
 function calcStats(){
   let totalValue=0,totalCost=0,etfValue=0,stockValue=0;
   const enriched=positions.map(p=>{
@@ -2984,7 +3168,7 @@ function calcStats(){
 
 const symId=s=>String(s).replace(/[^A-Za-z0-9_-]/g,'_');
 const CUR_SIGN={USD:'$',GBP:'£',EUR:'€'};
-function portfolioAge(){return Math.floor((Date.now()-posUpdatedTimestamp)/86400000);}
+function portfolioAge(){return daysSince(posUpdatedTimestamp);}
 function renderPortfolio(){
   const{enriched,totalValue,totalCost,etfValue,stockValue}=calcStats();
   renderPortfolioSignals(enriched,totalValue,stockValue);
@@ -3014,7 +3198,7 @@ function renderPortfolio(){
     return;
   }
   const ageDays=portfolioAge();
-  const ageLabel=ageDays<=0?'today':ageDays===1?'1 day ago':ageDays+' days ago';
+  const ageLabel=agoTxt(posUpdatedTimestamp);
   document.getElementById('port-updated').textContent='Prices from '+posUpdatedAt+' ('+ageLabel+')';
   if(banner){
     if(ageDays>=14)showBanner('bad',`<b>Prices are ${ageDays} days old.</b> Markets may have moved a lot since. Upload a fresh IBKR statement below or import Claude's file in Feedback.`);
@@ -3067,11 +3251,8 @@ function updatePosition(symbol){
   positions[idx].currentPrice=newPrice;
   positions[idx].type=newType;
   const ov=JSON.parse(localStorage.getItem('fos_type_overrides')||'{}');ov[symbol]=newType;localStorage.setItem('fos_type_overrides',JSON.stringify(ov));
-  posUpdatedAt='your manual update of '+fmtDY(new Date());
-  posUpdatedTimestamp=Date.now();
+  // One corrected price does not make the whole snapshot fresh: the portfolio date stays as it was.
   localStorage.setItem('fos_positions',JSON.stringify(positions));
-  localStorage.setItem(POS_UPDATED_KEY,posUpdatedAt);
-  localStorage.setItem('fos_pos_ts',posUpdatedTimestamp);
   editingPosition=null;
   renderPortfolio();
   flash(symbol+' updated');
@@ -3083,16 +3264,19 @@ function renderPortfolioSignals(enriched,totalValue,stockValue){
   const sig=[];const add=(k,h)=>sig.push(`<div class="signal"><div class="signal-dot sig-${k}"></div><div>${h}</div></div>`);
   const by=[...enriched].sort((a,b)=>b.valueEUR-a.valueEUR);
   const top=by[0];const topPct=top.valueEUR/totalValue*100;
-  add(topPct>15?'warn':'good',`Largest holding <b>${esc(top.symbol)}</b> is ${topPct.toFixed(1)}% of the portfolio${topPct>15?'. Above 15% is single-name concentration risk':''}.`);
+  // Concentration risk is about one company. A broad ETF at the top spreads across thousands.
+  const topS=by.find(p=>p.type!=='ETF'),topSPct=topS?topS.valueEUR/totalValue*100:0;
+  if(top.type==='ETF')add('info',`Largest holding <b>${esc(top.symbol)}</b> (ETF) is ${topPct.toFixed(1)}% of the portfolio.`);
+  if(topS)add(topSPct>15?'warn':'good',`Largest single stock <b>${esc(topS.symbol)}</b> is ${topSPct.toFixed(1)}% of the portfolio${topSPct>15?'. Above 15% in one company is concentration risk':''}.`);
   const stocks=by.filter(p=>p.type==='Stock');
   if(stocks.length){
     const top3=stocks.slice(0,3);const t3=top3.reduce((s,p)=>s+p.valueEUR,0)/totalValue*100;
     add(stockValue/totalValue>0.4?'warn':'info',`Single stocks are <b>${Math.round(stockValue/totalValue*100)}%</b> of the portfolio; the top 3 (${top3.map(p=>esc(p.symbol)).join(', ')}) ${t3.toFixed(0)}%. Broad ETFs often hold the same large names, so the real exposure can be higher.`);
   }
   const small=by.filter(p=>p.valueEUR<500);
-  if(small.length)add('info',`<b>${small.length} position${small.length>1?'s':''} under ${fmt0(500)}</b> (${fmt0(small.reduce((s,p)=>s+p.valueEUR,0))} in total): ${small.map(p=>esc(p.symbol)).join(', ')}. Little effect on results; candidates to fold into your core ETF.`);
+  if(small.length)add('info',`<b>${small.length} position${small.length>1?'s':''} under ${fmt0(500)}</b> (${fmt0(small.reduce((s,p)=>s+p.valueEUR,0))} in total): ${small.map(p=>esc(p.symbol)).join(', ')}. Little effect on results; candidates to fold into your core ETF. Selling realises gains or losses, so check the tax effect first.`);
   const frozen=by.filter(p=>p.frozen);
-  if(frozen.length)add('warn',`<b>${frozen.map(p=>esc(p.symbol)).join(', ')}</b> show no live trading (IBKR values them by hand). Likely funds in liquidation awaiting payout; worth a check with IBKR.`);
+  if(frozen.length)add('warn',`<b>${frozen.map(p=>esc(p.symbol)).join(', ')}</b> ${frozen.length>1?'show':'shows'} no live trading (IBKR values ${frozen.length>1?'them':'it'} by hand). Likely ${frozen.length>1?'funds':'a fund'} in liquidation awaiting payout; worth a check with IBKR.`);
   const losers=by.filter(p=>p.pnlEUR<0).sort((a,b)=>a.pnlEUR-b.pnlEUR).slice(0,3);
   if(losers.length)add('info',`Largest unrealised losses: ${losers.map(p=>`<b>${esc(p.symbol)}</b> ${fmt0(p.pnlEUR)}`).join(', ')}.`);
   box.innerHTML=sig.join('');
@@ -3215,7 +3399,7 @@ function renderCashAccounts(){
       <select aria-label="Currency" onchange="updateCashField(${i},'currency',this.value);recomputeCashTotal();updateNetWorthOnly();">
         ${['EUR','AED','USD','GBP'].map(k=>`<option ${c.currency===k?'selected':''}>${k}</option>`).join('')}
       </select>
-      <input type="number" inputmode="decimal" aria-label="Balance" placeholder="0" value="${c.amount||''}" oninput="updateCashAmountLive(${i},this.value)" onblur="recomputeCashTotal();updateNetWorthOnly();">
+      <input type="text" inputmode="decimal" autocomplete="off" aria-label="Balance" placeholder="0" value="${c.amount||''}" oninput="updateCashAmountLive(${i},this.value)" onblur="recomputeCashTotal();updateNetWorthOnly();">
     </div>`).join('')||'<div class="empty">No accounts yet.</div>';
   recomputeCashTotal();
 }
@@ -3226,7 +3410,7 @@ function updateCashField(idx,field,val){
 }
 function updateCashAmountLive(idx,val){
   if(!cashAccounts[idx])return;
-  cashAccounts[idx].amount=parseFloat(val)||0;
+  cashAccounts[idx].amount=parseAmt(val)||0;
   localStorage.setItem('fos_cash',JSON.stringify(cashAccounts));
   recomputeCashTotal();
 }
@@ -3243,8 +3427,8 @@ function addCashAccount(){
 // Net worth: IBKR, crypto, your share of the flat and bank cash, in a fixed order and fixed colours.
 function netWorthParts(){
   const fv=calcFlatValue();
-  const ibkr=Math.round(+wealth.broker||0),crypto=Math.round(+wealth.cryptoLive||0),flatEUR=Math.round(fv.yourShare||0),cash=Math.round(cashEUR());
-  const ageTxt=ts=>{const d=Math.floor((Date.now()-ts)/86400000);return d<=0?'today':d===1?'yesterday':d+' days ago';};
+  const ibkr=ibkrNow(),crypto=Math.round(+wealth.cryptoLive||0),flatEUR=Math.round(fv.yourShare||0),cash=Math.round(cashEUR());
+  const ageTxt=agoTxt;
   const nCoins=Object.values(cryptoHoldings||{}).reduce((s,a)=>s+((a||[]).filter(c=>c&&c.symbol&&+c.qty>0).length),0);
   const own=flat.ownership!=null?flat.ownership:100;
   return[
@@ -3866,6 +4050,7 @@ let lastScreen='log';
 const SCREEN_ALIAS={trades:'portfolio',partner:'freedom',more:'settings'};
 function showScreen(id,btn){
   id=SCREEN_ALIAS[id]||id;
+  dayRollover();
   const sc=document.getElementById('screen-'+id);if(!sc)return;
   // Like iOS tab bars: each tab keeps its scroll position; tapping the tab you are on scrolls it to the top.
   if(sc.classList.contains('active'))sc.scrollTop=0;
@@ -3890,6 +4075,11 @@ function showScreen(id,btn){
     updateFreedom();
   }
   if(id==='settings'){updateFXDisplay();const cs=document.getElementById('currency-select');if(cs)cs.value=currency;}
+}
+function renderActive(){
+  const a=document.querySelector('.screen.active');if(!a)return;
+  const f={log:renderRecent,overview:renderOverview,feedback:renderFeedback,wealth:renderWealth,portfolio:renderPortfolio,freedom:updateFreedom}[a.id.replace('screen-','')];
+  if(f)try{f();}catch(e){console.error(e);}
 }
 function toggleSettings(){
   const on=document.getElementById('screen-settings').classList.contains('active');
@@ -3964,6 +4154,7 @@ document.addEventListener('visibilitychange',()=>{
     lastVisibleAt=Date.now();
   } else {
     if(pinIsSet()&&Date.now()-lastVisibleAt>60000)lockNow();
+    if(dayRollover())renderActive();
     refreshMarketData();
     checkForUpdate();
   }
