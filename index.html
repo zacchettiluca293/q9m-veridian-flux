@@ -969,7 +969,7 @@
   </div>
 </div>
 <script>
-const APP_VERSION='2026-10-31 r8';
+const APP_VERSION='2026-10-31 r9';
 // Sobha: exactly one installment per month counts as investing, capped at EUR 1,500. Everything else paid to Sobha is an expense (Sobha bills & fees).
 const SOBHA_CAP=1500,SOBHA_MIN=1455;
 const APP_ID='luca',RAW_NS='fos_';
@@ -2264,7 +2264,7 @@ const fmtDay=d=>fmtD(d);
 const SPEND_RULES=[
   {id:'delivery',re:/keeta|wolt|lieferando|uber\s*eats|deliveroo|talabat|foodpanda|doordash|glovo|just\s*eat|noon\s*food/i,label:'Food delivery',unit:'orders',lever:'The order count is the lever.',
     tip:(n,tot,avg)=>avg>12?`About ${fmt0(avg)} per order. Halving the orders and cooking those nights (about €8 a meal) keeps roughly ${fmt0((avg-8)*n/2)} a month.`:''},
-  {id:'ride',re:/\buber\b(?!\s*eats)|\bbolt\b|\btaxi|free\s*now|careem(?!\s*food)|\blyft\b/i,label:'Taxis and rides',unit:'rides',lever:'The ride count is the lever.',
+  {id:'ride',re:/\buber\b(?!\s*eats)|\bbolt\b|\btaxi|free\s*now|careem(?!\s*food)|\blyft\b/i,notCats:['Dining Out','Groceries'],label:'Taxis and rides',unit:'rides',lever:'The ride count is the lever.',
     tip:(n,tot)=>n>=3?`${n} rides. Check how many of them a monthly transit pass would have covered.`:''},
   {id:'train',re:/\btrains?\b|\bzug\b|deutsche\s*bahn|\bbahn\b|\bdb\b|trenitalia|\bitalo\b|frecciarossa|flixtrain|\bice\s+(?:train|zug|ticket)|eurostar|sncf|ouigo/i,label:'Trains',unit:'tickets',lever:'Booking time is the lever, not the trip.',
     tip:()=>`For planned trips, booking 3 to 6 weeks ahead usually costs less than the final week; DB, Trenitalia and Italo fares climb as seats sell.`},
@@ -2274,15 +2274,32 @@ const SPEND_RULES=[
     tip:()=>`For a week or longer, ask the host for a weekly rate before booking.`},
   {id:'clothes',re:/zara|h&m|uniqlo|\bcos\b|mango|zalando|nike|adidas|massimo|primark|arket|asos|about\s*you|shein/i,label:'Clothing',unit:'purchases',lever:'Impulse buys are the lever.',
     tip:(n)=>n>=2?`A 48-hour wait on anything above €50 filters most regret buys; returns are easiest before the tags come off.`:''},
-  {id:'amazon',re:/amazon|amzn/i,label:'Amazon',unit:'orders',lever:'Small single orders are the lever.',
-    tip:(n)=>n>=3?`One weekly basket instead of single orders cuts the add-on buys.`:''},
+  {id:'amazon',re:/amazon|amzn/i,notCats:['Groceries'],label:'Amazon',unit:'orders',lever:'Small single orders are the lever.',
+    tip:(n)=>n>=6?`More than one order a week: one weekly basket cuts the add-on buys.`:''},
   {id:'coffee',re:/coffee|caf[eé]\b|starbucks|espresso|cappuccino|einstein|b[aä]ckerei|bakery/i,label:'Coffee and bakery',unit:'visits',lever:'',
     tip:(n,tot)=>tot>=40?`Keep it if it is your social time; on autopilot it is ${fmt0(tot*12)} a year.`:''},
 ];
+// Which pattern an entry belongs to. The category decides between look-alikes: "Uber kebab" in Dining Out is food delivery.
+function ruleFor(tx){
+  const d=tx.desc||'';
+  const r=SPEND_RULES.find(r=>r.re.test(d)&&!(r.notCats&&r.notCats.includes(tx.cat)));
+  if(r)return r;
+  if(tx.cat==='Dining Out'&&/\b(uber|bolt|careem)\b/i.test(d))return SPEND_RULES.find(x=>x.id==='delivery');
+  return null;
+}
+// Tips that read the month first: a weekly grocery basket needs a different tip from daily top-ups.
+function catTip(c,entries){
+  if(c==='Groceries'){
+    const now=new Date(),days=(viewYear===now.getFullYear()&&viewMonth===now.getMonth())?now.getDate():_daysInView();
+    const n=(entries||[]).filter(t=>t.cat==='Groceries').reduce((s,t)=>s+qtyOf(t.desc),0);
+    if(n&&n/Math.max(1,days/7)<=1.3)return 'About one basket a week already: the lever is what goes in the basket, not how often.';
+  }
+  return CAT_TIPS[c]||'';
+}
 function ruleHits(entries){
   const out={};
   entries.forEach(tx=>{
-    const r=SPEND_RULES.find(r=>r.re.test(tx.desc||''));if(!r)return;
+    const r=ruleFor(tx);if(!r)return;
     const o=out[r.id]||(out[r.id]={rule:r,n:0,tot:0,items:[]});
     o.n+=qtyOf(tx.desc);o.tot+=tx.amount;o.items.push(tx);
   });
@@ -2386,7 +2403,7 @@ function buildCoach(ctx){
       const b=bud[m.c];
       const budTxt=b?` Budget ${fmt0(b)}${m.v>b?`, ${fmt0(m.v-b)} over`:''}.`:'';
       const head=m.a<1?`<b>${catLabel(m.c)}</b> ${fmt0(m.v)}, with none in the previous ${avg.months} month${avg.months>1?'s':''}.`:`<b>${catLabel(m.c)}</b> ${fmt0(m.v)} vs ${fmt0(m.a)} usual ${cmp} (<span class="nw">+${fmt0(m.d)}</span>).`;
-      const close=dom&&dom.rule.lever?' '+dom.rule.lever:LUMPY.has(m.c)?' Lumpy category; judge it over a quarter, not a month.':' '+(CAT_TIPS[m.c]||'No guilt; decide which of these were worth it.');
+      const close=dom&&dom.rule.lever?' '+dom.rule.lever:LUMPY.has(m.c)?' Lumpy category; judge it over a quarter, not a month.':' '+(catTip(m.c,entries)||'No guilt; decide which of these were worth it.');
       watch.push({t:head+why+budTxt+close,v:m.d,c:m.c,habit:m.a>=1&&!LUMPY.has(m.c)&&!(dom&&['train','flight','stay'].includes(dom.rule.id)),tip:dom?dom.rule.tip(dom.n,dom.tot,dom.tot/Math.max(1,dom.n)):''});
     });
     moves.filter(m=>!LUMPY.has(m.c)&&m.a>=60&&m.d<=-40&&m.v<=m.a*0.75).sort((x,y)=>x.d-y.d).slice(0,2).forEach(m=>{
@@ -2423,7 +2440,7 @@ function buildCoach(ctx){
   if(lever){
     const perMonth=isCur?lever.v/Math.max(0.25,day/ctx.dim):lever.v;
     const g=fiGainText(perMonth,0);
-    next.push({t:`Biggest lever: bring <b>${catLabel(lever.c)}</b> back to usual. That is about ${fmt0(perMonth)} a month${g?`; invested, freedom about <b>${g} earlier</b>`:''}.${lever.tip?' '+lever.tip:(CAT_TIPS[lever.c]&&!lever.t.includes(CAT_TIPS[lever.c])?' '+CAT_TIPS[lever.c]:'')}`,v:lever.v});
+    next.push({t:`Biggest lever: bring <b>${catLabel(lever.c)}</b> back to usual. That is about ${fmt0(perMonth)} a month${g?`; invested, freedom about <b>${g} earlier</b>`:''}.${lever.tip?' '+lever.tip:((x=>x&&!lever.t.includes(x)?' '+x:'')(catTip(lever.c,entries)))}`,v:lever.v});
   }
   // Cash cushion: the Safety cushion card is the single source; here only a missing bank balance gets a nudge.
   if(ctx.isCur&&cashEUR()<1)next.push({t:`Add your bank balances in Wealth so the safety cushion (6 months of spending in cash) can be checked.`,v:1});
@@ -2490,7 +2507,7 @@ function buildDetails(ctx,co){
       const d=pd(tx.date);if(d.getMonth()!==m||d.getFullYear()!==y||d>today)return;
       if(tx.amount>60||isInstalmentDesc(tx.desc)||/\d+\s*\/\s*\d+|\s\d+\s*$/.test(tx.desc||''))return;
       const key=(tx.desc||'').trim().toLowerCase();if(!key)return;
-      if(SPEND_RULES.some(r=>r.re.test(tx.desc||'')))return;
+      if(ruleFor(tx))return;
       const o=subs[key]||(subs[key]={name:(tx.desc||'').trim(),months:new Set(),amt:0,lo:Infinity,hi:0});o.months.add(m+'-'+y);o.amt=tx.amount;o.lo=Math.min(o.lo,tx.amount);o.hi=Math.max(o.hi,tx.amount);
     });
   }
@@ -2634,10 +2651,13 @@ function lifestyleRoom(ctx){
   let techL=0;Object.entries(ctx.cur.techCats||{}).forEach(([c,v])=>{if(catClass(c)==='lifestyle')techL+=v;});
   const spent=Math.max(0,splitClass(ctx.cur.cats).l-techL),line=inc*tg.life/100,left=line-spent;
   const daysLeft=ctx.isCur?ctx.dim-ctx.day+1:0;
-  return{tg,inc,assumed,spent,line,left,daysLeft,perDay:daysLeft>0&&left>0?left/daysLeft:0,isCur:ctx.isCur};
+  // Within €10 (or 1%) of the line counts as on it: a euro either way is not news.
+  const onLine=Math.abs(left)<Math.max(10,line*0.01);
+  return{tg,inc,assumed,spent,line,left,onLine,daysLeft,perDay:daysLeft>0&&left>0?left/daysLeft:0,isCur:ctx.isCur};
 }
 function roomText(r){
   if(!r)return '';
+  if(r.onLine)return r.isCur?`Lifestyle is <b>on your ${r.tg.life}% line</b> this month: ${fmt0(r.spent)} of ${fmt0(r.line)}.${r.daysLeft>1?' Hold it for the rest of the month.':''}`:`Lifestyle ended <b>on your ${r.tg.life}% line</b>: ${fmt0(r.spent)} of ${fmt0(r.line)}.`;
   if(!r.isCur)return r.left>=0?`Lifestyle ended at <b>${fmt0(r.spent)}</b>, ${fmt0(r.left)} under your ${r.tg.life}% line of ${fmt0(r.line)}.`:`Lifestyle ended at <b>${fmt0(r.spent)}</b>, <b>${fmt0(-r.left)} over</b> your ${r.tg.life}% line of ${fmt0(r.line)}.`;
   if(r.left<0)return `Lifestyle is <b>${fmt0(-r.left)} over</b> your ${r.tg.life}% line this month. Every extra euro now comes out of cash saved.`;
   if(r.daysLeft<=1)return `Lifestyle: <b>${fmt0(r.left)} left</b> for today, the last day of the month.`;
@@ -2657,6 +2677,15 @@ const jsq=v=>_attr(JSON.stringify(String(v)));
 function actionItems(ctx,co){
   const out=[];if(!ctx||ctx.isFuture)return out;
   const bud=getBudgets(),entries=monthEntries(ctx),daysLeft=ctx.isCur?ctx.dim-ctx.day+1:0,dl=`${daysLeft} day${daysLeft===1?'':'s'}`;
+  // 0/ Sobha installment missing although it ran the months before (paid but not logged, or paused)
+  const fullInv=(ctx.isCur?getMonthData(viewMonth,viewYear):ctx.cur).invCats||{};
+  const sobPrev=[1,2,3].filter(k=>{const a=monthAdd(viewYear,viewMonth,-k);return (getMonthData(a.m,a.y).invCats.Sobha||0)>0;}).length;
+  const sobEnd=localStorage.getItem('fos_sobha_end')||'',ymV=ymStr(viewYear,viewMonth);
+  const sobDays=transactions.filter(t=>t.cat==='Sobha'&&t.type!=='income'&&!t.amort).map(t=>pd(t.date).getDate()),sobDay=sobDays.length?Math.round(median(sobDays)):1;
+  if(sobPrev>=2&&!(fullInv.Sobha>0)&&(!sobEnd||ymV<=sobEnd)&&(!ctx.isCur||ctx.day>=sobDay)){
+    const sd=ctx.isCur?todayStr():ymV+'-'+String(Math.min(sobDay,ctx.dim)).padStart(2,'0');
+    out.push({id:'sobha',k:'warn',t:`<b>Sobha</b>: no ${fmt0(SOBHA_CAP)} installment logged this month, after ${sobPrev} months in a row. Paid? Log it, and investing and cash saved come out right. Paused or finished? Set the end month under Planned changes.`,btns:[{l:'Log Sobha',js:`prefillLog('invest','Sobha',${SOBHA_CAP},'Sobha',${jsq(sd)})`},{l:'Set end month',js:"fbSeg('ahead')"}]});
+  }
   // 1/ Variable spending the coach flags: over budget or ahead of pace; without a budget, well above your usual. Two at most, biggest first.
   const frac=ctx.isCur?Math.min(1,ctx.day/ctx.dim):1;
   [...new Set(co.watch.filter(w=>w.c&&DISCRETIONARY.has(w.c)).map(w=>w.c))].map(c=>{
@@ -2717,7 +2746,7 @@ function actionPlanHtml(ctx,co){
   let head='';
   if(r){
     const pct=r.line>0?Math.min(100,r.spent/r.line*100):0;
-    head=`<div class="act-head"><div>${roomText(r)}</div><div class="tg-bar"><div class="tg-fill" style="width:${pct.toFixed(1)}%;background:${r.left<0?'var(--red)':'var(--c-life)'}"></div></div><span class="fs-sub">Line: ${r.tg.life}% of ${fmt0(r.inc)} income${r.assumed?' (typical month, since this month\'s income is not logged yet)':''} = ${fmt0(r.line)}. Spent ${fmt0(r.spent)} so far, device instalments apart.</span></div>`;
+    head=`<div class="act-head"><div>${roomText(r)}</div><div class="tg-bar"><div class="tg-fill" style="width:${pct.toFixed(1)}%;background:${r.left<0&&!r.onLine?'var(--red)':'var(--c-life)'}"></div></div><span class="fs-sub">Line: ${r.tg.life}% of ${fmt0(r.inc)} income${r.assumed?' (typical month, since this month\'s income is not logged yet)':''} = ${fmt0(r.line)}. Spent ${fmt0(r.spent)} so far, device instalments apart.</span></div>`;
   }
   const rows=open.slice(0,4).map(a=>`<div class="signal act"><div class="signal-dot sig-${a.k}"></div><div class="act-body"><div>${a.t}</div><div class="act-btns">${a.btns.map(b=>`<button class="btn-sm" onclick="${b.js}">${esc(b.l)}</button>`).join('')}<button class="btn-sm act-done" data-id="${_attr(a.id)}" onclick="markActDone(this.dataset.id,this)">Done</button></div></div></div>`).join('');
   const more=open.length>4?`<div class="coach-note">${open.length-4} more once these are done.</div>`:'';
@@ -2740,7 +2769,7 @@ function renderCoachMini(){
   const ctx=monthCtx(),co=buildCoach(ctx);
   // Current month: lead with the lifestyle money left, the one number that steers the rest of the month.
   const r=ctx.isCur?lifestyleRoom(ctx):null;
-  const head=r?`<div class="signal"><div class="signal-dot sig-${r.left>=0?'good':'warn'}"></div><div>${roomText(r)}</div></div>`:'';
+  const head=r?`<div class="signal"><div class="signal-dot sig-${r.left>=0||r.onLine?'good':'warn'}"></div><div>${roomText(r)}</div></div>`:'';
   const aw=(co.ahead||[]).filter(i=>i.k==='warn').slice(0,1);
   const pick=[...co.watch.slice(0,2),...aw,...co.next.slice(0,1),...co.wins.slice(0,1)].slice(0,head?2:3);
   const kind=i=>co.watch.includes(i)?'warn':co.next.includes(i)?'info':aw.includes(i)?'warn':'good';
