@@ -452,6 +452,8 @@
   .fb-how{margin:0 0 8px;}
   .how-list{margin:2px 0 8px;padding-left:18px;font-size:13.5px;line-height:1.5;color:var(--text2);}
   .how-list li{margin:6px 0;}
+  .skip-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0 2px;}
+  .skip-chip.out{background:var(--bg3);color:var(--text2);text-decoration:line-through;border-style:dashed;}
 </style>
 </head>
 <body>
@@ -585,7 +587,8 @@
   <details class="more fb-how" id="fb-how"><summary>How this works</summary>
     <ul class="how-list">
       <li><b>This month</b> and <b>Ahead</b> are worked out on this phone from your entries, each time you open them. Add or edit an entry and they change. Nothing leaves the phone.</li>
-      <li>Yardsticks: your own last 3 months at the same day of the month, your targets and your budgets (Targets, Edit).</li>
+      <li>Yardsticks: your own last 3 months at the same day of the month, your targets and your budgets (Targets, Edit). Months away, such as a summer abroad, can be left out there.</li>
+      <li>Targets can change from a given month on, for example when the nanny starts. Each month is judged by the targets in force then.</li>
       <li><b>Action plan</b> lists what is worth doing now, each with the button that does it. Done hides an item for the rest of the month.</li>
       <li>The <b>Claude</b> tab holds Claude's written review. It stays as it is until you import the next file from Claude.</li>
       <li>Export only for that review, once a month: Export data for Claude, send the file, import the file Claude sends back. That file can also update your portfolio and the flat value.</li>
@@ -919,6 +922,7 @@
 <div id="budgets-overlay" class="modal-overlay" onclick="if(event.target===this)closeBudgets()">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="budgets-title">
     <div class="modal-header"><div class="modal-title" id="budgets-title">Targets and budgets</div><button class="modal-close" onclick="closeBudgets()" aria-label="Close">×</button></div>
+    <p class="note" id="tg-period" style="display:none;margin:-2px 0 12px;"></p>
     <div class="sub-title">Share of income, %</div>
     <div class="row">
       <div><label for="tg-exp">Expenses at most</label><input id="tg-exp" type="number" inputmode="numeric" min="0" max="100"></div>
@@ -934,6 +938,9 @@
     <div class="card-head" style="margin:16px 0 4px;"><div class="sub-title" style="margin:0;">Monthly budget per category (€)</div><button class="btn-sm" onclick="fillBudgetsFromHistory(this)">Use 3-month average</button></div>
     <p class="note" style="margin:0 0 8px;">Tap a category name to switch it between essential and lifestyle.</p>
     <div id="budget-rows"></div>
+    <div class="sub-title" style="margin:18px 0 4px;">Months away</div>
+    <p class="note" style="margin:0 0 8px;">Holidays or time living elsewhere. Crossed-out months stay in your history and are left out of every comparison.</p>
+    <div class="skip-wrap" id="skip-months"></div>
     <button class="btn btn-primary" style="margin-top:14px;" onclick="saveBudgets(this)">Save</button>
   </div>
 </div>
@@ -969,7 +976,7 @@
   </div>
 </div>
 <script>
-const APP_VERSION='2026-10-31 r9';
+const APP_VERSION='2026-10-31 r10';
 // Sobha: exactly one installment per month counts as investing, capped at EUR 1,500. Everything else paid to Sobha is an expense (Sobha bills & fees).
 const SOBHA_CAP=1500,SOBHA_MIN=1455;
 const APP_ID='luca',RAW_NS='fos_';
@@ -2025,13 +2032,15 @@ function plannedMonthlyInvest(year){
 }
 // Average of up to N prior months that actually contain data, at the same day cutoff when MTD.
 function priorAverage(n,maxDay){
-  const out={spent:0,invested:0,income:0,cats:{},techCats:{},months:0};
-  for(let k=1;k<=n;k++){
+  const out={spent:0,invested:0,income:0,cats:{},techCats:{},months:0,used:[]};
+  for(let k=1,seen=0;seen<n&&k<=24;k++){
     let m=viewMonth-k,y=viewYear;
     while(m<0){m+=12;y--;}
+    if(isSkipped(y,m))continue;
+    seen++;
     const d=getMonthData(m,y,maxDay);
     if(d.income===0&&d.spent===0&&d.invested===0)continue;
-    out.months++;out.spent+=d.spent;out.invested+=d.invested;out.income+=d.income;
+    out.used.push({y,m});out.months++;out.spent+=d.spent;out.invested+=d.invested;out.income+=d.income;
     Object.entries(d.cats).forEach(([c,v])=>{out.cats[c]=(out.cats[c]||0)+v;});
     Object.entries(d.techCats||{}).forEach(([c,v])=>{out.techCats[c]=(out.techCats[c]||0)+v;});
   }
@@ -2061,10 +2070,41 @@ const CAT_TIPS={
   'Other':'Recategorise first; unlabelled spend cannot be managed.'
 };
 function getBudgets(){try{return JSON.parse(localStorage.getItem('fos_budgets')||'{}')||{};}catch(e){return{};}}
-function getAllocTargets(){
+// Targets can change from a given month on (the nanny from November): each month is judged by the targets in force then.
+function allocPeriods(){try{const a=JSON.parse(localStorage.getItem('fos_alloc_from')||'[]');return (Array.isArray(a)?a:[]).filter(p=>p&&/^\d{4}-\d{2}$/.test(p.from)).sort((x,y)=>x.from.localeCompare(y.from));}catch(e){return[];}}
+function getAllocTargets(y,m){
   const d={exp:50,inv:40,sav:10,ess:30,life:20};
-  try{const o=Object.assign(d,JSON.parse(localStorage.getItem('fos_alloc')||'{}')||{});if(Math.round(o.ess+o.life)!==Math.round(o.exp)){o.life=Math.max(0,o.exp-o.ess);}return o;}catch(e){return d;}
+  let o={...d};try{o=Object.assign({},d,JSON.parse(localStorage.getItem('fos_alloc')||'{}')||{});}catch(e){}
+  if(y==null){y=viewYear;m=viewMonth;}
+  const ym=y+'-'+String(m+1).padStart(2,'0');let from=null;
+  allocPeriods().forEach(p=>{if(p.from<=ym){o=Object.assign({},d,p);from=p.from;}});
+  ['exp','inv','sav','ess','life'].forEach(k=>{o[k]=+o[k];if(!isFinite(o[k]))o[k]=d[k];});
+  if(Math.round(o.ess+o.life)!==Math.round(o.exp))o.life=Math.max(0,o.exp-o.ess);
+  o.from=from;return o;
 }
+function applyTargetsFrom(from,exp,inv,sav,ess,life){
+  const per=allocPeriods().filter(p=>p.from!==from);per.push({from,exp:+exp,inv:+inv,sav:+sav,ess:+ess,life:+life});
+  per.sort((a,b)=>a.from.localeCompare(b.from));localStorage.setItem('fos_alloc_from',JSON.stringify(per));
+  const [y,m]=from.split('-').map(Number);flash('New targets from '+fmtMY(y,m-1));
+  renderOverview();if(document.getElementById('screen-feedback').classList.contains('active'))renderFeedback();
+}
+// Months away (holidays, living elsewhere) stay in your history but stop being the yardstick.
+function skipMonths(){try{const a=JSON.parse(localStorage.getItem('fos_skip_months')||'[]');return new Set(Array.isArray(a)?a.filter(x=>/^\d{4}-\d{2}$/.test(x)):[]);}catch(e){return new Set();}}
+function isSkipped(y,m){return skipMonths().has(y+'-'+String(m+1).padStart(2,'0'));}
+function skipTxt(){
+  const s=[...skipMonths()].sort();if(!s.length)return '';
+  const byY={};s.forEach(x=>{const [y,m]=x.split('-').map(Number);(byY[y]=byY[y]||[]).push(MS[m-1]);});
+  return ' Months away, left out: '+Object.entries(byY).map(([y,ms])=>ms.join(', ')+' '+y).join('; ')+' (Targets, Edit).';
+}
+function renderSkipChips(){
+  const box=document.getElementById('skip-months');if(!box)return;
+  const s=skipMonths(),now=new Date();let html='',lastY=null;
+  for(let k=12;k>=1;k--){const a=monthAdd(now.getFullYear(),now.getMonth(),-k),ym=ymStr(a.y,a.m),out=s.has(ym);
+    if(a.y!==lastY){html+=`<span class="strip-year">${a.y}</span>`;lastY=a.y;}
+    html+=`<button type="button" class="month-chip skip-chip${out?' out':''}" aria-pressed="${out}" aria-label="${ML[a.m]} ${a.y}" onclick="toggleSkip('${ym}',this)">${MS[a.m]}</button>`;}
+  box.innerHTML=html;
+}
+function toggleSkip(ym,el){const s=skipMonths();if(s.has(ym))s.delete(ym);else s.add(ym);localStorage.setItem('fos_skip_months',JSON.stringify([...s].sort()));const out=s.has(ym);el.classList.toggle('out',out);el.setAttribute('aria-pressed',String(out));}
 function _daysInView(){return new Date(viewYear,viewMonth+1,0).getDate();}
 
 // Category bars: essentials in one colour, lifestyle in another, red only when a budget is exceeded.
@@ -2124,8 +2164,15 @@ function renderAlloc(cur,prev,isCur,pName){
 }
 
 // Budgets modal
+let _tgFrom=null;
 function openBudgets(){
-  const tg=getAllocTargets(),bud=getBudgets();
+  const tg=getAllocTargets(),bud=getBudgets();_tgFrom=tg.from||null;
+  const per=allocPeriods(),ymV=ymStr(viewYear,viewMonth),nxt=per.find(p=>p.from>ymV);
+  const fm=ym=>{const [y,m]=ym.split('-').map(Number);return fmtMY(y,m-1);};
+  const until=nxt?(()=>{const [y,m]=nxt.from.split('-').map(Number);const a=monthAdd(y,m-1,-1);return fmtMY(a.y,a.m);})():null;
+  const pn=document.getElementById('tg-period');
+  if(pn){const t=tg.from||nxt?`These targets apply${tg.from?' from '+fm(tg.from):''}${until?' until '+until:''}.`+(nxt?` From ${fm(nxt.from)}: essentials ${nxt.ess}%, lifestyle ${nxt.life}%, investing ${nxt.inv}%, saved ${nxt.sav}%.`:''):'';pn.textContent=t;pn.style.display=t?'':'none';}
+  renderSkipChips();
   document.getElementById('tg-exp').value=tg.exp;document.getElementById('tg-inv').value=tg.inv;document.getElementById('tg-sav').value=tg.sav;
   document.getElementById('tg-ess').value=tg.ess;document.getElementById('tg-life').value=tg.life;
   document.getElementById('budget-rows').innerHTML=EXPENSE_CATS.map(c=>`<div class="budget-row"><span class="tap" data-cat="${_attr(c)}" onclick="toggleCatClass(this)">${catLabel(c)} <span class="cls-pill cls-${catClass(c)}">${catClass(c)==='essential'?'essential':'lifestyle'}</span></span><input type="text" inputmode="decimal" autocomplete="off" data-cat="${c.replace(/"/g,'&quot;')}" value="${bud[c]>0?bud[c]:''}" placeholder="—"></div>`).join('');
@@ -2142,12 +2189,14 @@ function closeBudgets(){document.getElementById('budgets-overlay').classList.rem
 // Average of up to 3 prior calendar months that contain data (relative to today), per category.
 function historyAverages(n){
   const now=new Date();const out={},cnt={months:0};
-  for(let k=1;k<=n;k++){
+  for(let k=1,seen=0;seen<n&&k<=24;k++){
     let m=now.getMonth()-k,y=now.getFullYear();while(m<0){m+=12;y--;}
+    if(isSkipped(y,m))continue;seen++;
     const d=getMonthData(m,y);
     if(d.income===0&&d.spent===0&&d.invested===0)continue;
     cnt.months++;
-    Object.entries(d.cats).forEach(([c,v])=>{out[c]=(out[c]||0)+v;});
+    // Device instalments pay for earlier purchases: not a budget base.
+    Object.entries(d.cats).forEach(([c,v])=>{out[c]=(out[c]||0)+v-((d.techCats||{})[c]||0);});
   }
   if(cnt.months)Object.keys(out).forEach(c=>{out[c]/=cnt.months;});
   return{avg:out,months:cnt.months};
@@ -2168,7 +2217,8 @@ function saveBudgets(btn){
   const bud={};
   document.querySelectorAll('#budget-rows input').forEach(inp=>{const v=parseAmt(inp.value);if(v>0)bud[inp.dataset.cat]=v;});
   localStorage.setItem('fos_budgets',JSON.stringify(bud));
-  localStorage.setItem('fos_alloc',JSON.stringify({exp:e,inv:i,sav:s,ess:es,life:li}));
+  if(_tgFrom){const per=allocPeriods().map(p=>p.from===_tgFrom?{from:_tgFrom,exp:e,inv:i,sav:s,ess:es,life:li}:p);localStorage.setItem('fos_alloc_from',JSON.stringify(per));}
+  else localStorage.setItem('fos_alloc',JSON.stringify({exp:e,inv:i,sav:s,ess:es,life:li}));
   btnDone(btn,'Saved');
   setTimeout(()=>{closeBudgets();renderOverview();if(document.getElementById('screen-feedback').classList.contains('active'))renderFeedback();},700);
 }
@@ -2374,10 +2424,14 @@ function buildCoach(ctx){
   const entries=monthEntries(ctx);
   const hits=ruleHits(entries);
   // Totals vs own history
-  if(avg.months&&avg.spent>0&&!early){
-    const pct=Math.round((cur.spent-avg.spent)/avg.spent*100);
-    if(pct<=-10)wins.push({t:`Expenses are <b>${Math.abs(pct)}% below</b> your usual ${cmp} (${fmt0(cur.spent)} vs ${fmt0(avg.spent)}). Quietly good.`,v:avg.spent-cur.spent});
-    else if(pct>=15)watch.push({t:`Expenses are <b>${pct}% above</b> your usual ${cmp}: ${fmt0(cur.spent)} vs ${fmt0(avg.spent)}. The categories below explain most of it.`,v:cur.spent-avg.spent});
+  // A planned monthly cost (the nanny) is known and decided: the rest is compared with your usual.
+  const pcs=[...new Set(plannedIn(viewYear,viewMonth).filter(p=>p.kind==='monthly'&&p.cat!=='Sobha').map(p=>p.cat))];
+  const exP=x=>pcs.reduce((s,c)=>s+((x.cats||{})[c]||0),0),apart=pcs.length?` (${pcs.map(c=>catLabel(c).toLowerCase()).join(', ')} apart)`:'';
+  const cS=cur.spent-exP(cur),aS=avg.spent-exP(avg);
+  if(avg.months&&aS>0&&!early){
+    const pct=Math.round((cS-aS)/aS*100);
+    if(pct<=-10)wins.push({t:`Expenses are <b>${Math.abs(pct)}% below</b> your usual ${cmp}${apart} (${fmt0(cS)} vs ${fmt0(aS)}). Quietly good.`,v:aS-cS});
+    else if(pct>=15)watch.push({t:`Expenses are <b>${pct}% above</b> your usual ${cmp}${apart}: ${fmt0(cS)} vs ${fmt0(aS)}. The categories below explain most of it.`,v:cS-aS});
   }
   if(cur.income>0){
     const pI=cur.invested/cur.income*100,pE=cur.spent/cur.income*100,sr=(cur.income-cur.spent)/cur.income*100;
@@ -2554,7 +2608,7 @@ function targetsHtml(ctx){
   const sr=(ctx.cur.income-ctx.cur.spent)/ctx.cur.income*100;
   const srP=ctx.prev.income>0?(ctx.prev.income-ctx.prev.spent)/ctx.prev.income*100:null;
   const srD=srP===null?'':`<span class="muted">, ${ctx.prevName} ${Math.round(srP)}%</span>`;
-  const how=`<div class="coach-note">How to read: each % is a share of the month's income. ${ctx.prevName} shows last month${ctx.isCur?` up to day ${ctx.day}, so both months cover the same days`:''}. The 3-month average covers the three months before. The white tick on each bar is your target.</div>`;
+  const how=`<div class="coach-note">How to read: each % is a share of the month's income. ${ctx.prevName} shows last month${ctx.isCur?` up to day ${ctx.day}, so both months cover the same days`:''}. The 3-month average covers ${(ctx.avg.used||[]).slice().reverse().map(u=>MS[u.m]).join(', ')||'the three months before'}.${skipTxt()} The white tick on each bar is your target${tg.from?`, in force from ${fmtMY(+tg.from.slice(0,4),+tg.from.slice(5)-1)}`:''}.</div>`;
   return html+`<div class="tg-sr">Kept rate <span class="muted">(invested + saved)</span> <b>${Math.round(sr)}%</b>${srD}</div>`+how;
 }
 
@@ -2684,7 +2738,13 @@ function actionItems(ctx,co){
   const sobDays=transactions.filter(t=>t.cat==='Sobha'&&t.type!=='income'&&!t.amort).map(t=>pd(t.date).getDate()),sobDay=sobDays.length?Math.round(median(sobDays)):1;
   if(sobPrev>=2&&!(fullInv.Sobha>0)&&(!sobEnd||ymV<=sobEnd)&&(!ctx.isCur||ctx.day>=sobDay)){
     const sd=ctx.isCur?todayStr():ymV+'-'+String(Math.min(sobDay,ctx.dim)).padStart(2,'0');
-    out.push({id:'sobha',k:'warn',t:`<b>Sobha</b>: no ${fmt0(SOBHA_CAP)} installment logged this month, after ${sobPrev} months in a row. Paid? Log it, and investing and cash saved come out right. Paused or finished? Set the end month under Planned changes.`,btns:[{l:'Log Sobha',js:`prefillLog('invest','Sobha',${SOBHA_CAP},'Sobha',${jsq(sd)})`},{l:'Set end month',js:"fbSeg('ahead')"}]});
+    out.push({id:'sobha',k:'warn',t:`<b>Sobha</b>: no ${fmt0(SOBHA_CAP)} installment logged this month (logged in ${sobPrev} of the last 3 months). Paid? Log it, and investing and cash saved come out right. Paused or finished? Set the end month under Planned changes.`,btns:[{l:'Log Sobha',js:`prefillLog('invest','Sobha',${SOBHA_CAP},'Sobha',${jsq(sd)})`},{l:'Set end month',js:"fbSeg('ahead')"}]});
+  }
+  // 0b/ A planned monthly cost (the nanny) starts soon and the targets for that month do not know about it yet
+  if(ctx.isCur){
+    const ts=targetSuggestion();
+    if(ts){const [ty,tm]=ts.from.split('-').map(Number),fm=fmtMY(ty,tm-1);
+      out.push({id:'targets:'+ts.from,k:'warn',t:`<b>${esc(ts.names.join(', '))}</b> from ${fm} lifts essentials to about <b>${Math.round(ts.share)}%</b> of income; your target then is ${ts.tg.ess}%. New targets from ${fm}: essentials ${ts.ess}%, lifestyle ${ts.life}%, investing ${ts.inv}%, saved ${ts.sav}%.`,btns:[{l:`Apply from ${MS[tm-1]}`,js:`applyTargetsFrom(${jsq(ts.from)},${ts.exp},${ts.inv},${ts.sav},${ts.ess},${ts.life})`}]});}
   }
   // 1/ Variable spending the coach flags: over budget or ahead of pace; without a budget, well above your usual. Two at most, biggest first.
   const frac=ctx.isCur?Math.min(1,ctx.day/ctx.dim):1;
@@ -2737,6 +2797,25 @@ function actionItems(ctx,co){
     if(ago>=28)out.push({id:'export',k:'info',t:le?`Monthly review with Claude: last export ${ago} days ago. Export, send the file to Claude, import the reply.`:'Monthly review with Claude: export your data, send the file to Claude, import the reply.',btns:[{l:'Export data',js:'exportData(this)'}]});
   }
   return out;
+}
+// Suggested targets when a planned essential monthly cost starts this month or within two months.
+// Essentials: your typical month plus the new cost. Lifestyle keeps its target. Saved keeps up to 5% when room shrinks; investing takes the rest.
+function targetSuggestion(){
+  const b=baseline();if(!b||!(b.income>0))return null;
+  const now=new Date();
+  for(let k=0;k<=2;k++){
+    const a=monthAdd(now.getFullYear(),now.getMonth(),k),ym=ymStr(a.y,a.m);
+    const pl=plannedIn(a.y,a.m).filter(p=>p.kind==='monthly'&&p.amount>0&&p.cat!=='Sobha'&&catClass(p.cat)==='essential');
+    if(!pl.length)continue;
+    const mon={};pl.forEach(p=>{mon[p.cat]=(mon[p.cat]||0)+p.amount;});
+    const extra=Object.entries(mon).reduce((s,[c,v])=>s+Math.max(0,v-(b.cat[c]||0)),0);
+    const share=(b.ess+extra)/b.income*100,tg=getAllocTargets(a.y,a.m);
+    if(share<=tg.ess+2)return null;
+    const ess=Math.min(100,Math.ceil(share)),life=Math.max(0,Math.min(tg.life,100-ess)),exp=ess+life,rem=100-exp;
+    const sav=rem<tg.inv+tg.sav?Math.min(tg.sav,5,rem):tg.sav,inv=Math.max(0,rem-sav);
+    return{from:ym,ess,life,exp,inv,sav,share,names:pl.map(p=>p.name),tg};
+  }
+  return null;
 }
 function actionPlanHtml(ctx,co){
   if(!ctx||ctx.isFuture)return '<div class="empty">Future month: nothing to act on yet.</div>';
@@ -2880,6 +2959,17 @@ function applyClaudeFile(j,btn){
   }
   if(Array.isArray(j.phasesIfMissing)&&j.phasesIfMissing.length&&!localStorage.getItem('fos_phases')){phases=j.phasesIfMissing;localStorage.setItem('fos_phases',JSON.stringify(phases));done.push('freedom phases');}
   if(j.flat){applyFlatUpdate(j.flat);done.push('flat value');}
+  if(Array.isArray(j.planned)&&j.planned.length){
+    const a=getPlanned();let n=0;
+    j.planned.forEach(p=>{if(!p||!p.name||!/^\d{4}-\d{2}$/.test(p.start||''))return;const ex=a.find(x=>x.name===p.name&&x.start===p.start);const v={name:String(p.name),cat:String(p.cat||'Other'),kind:p.kind==='once'?'once':'monthly',start:p.start,end:/^\d{4}-\d{2}$/.test(p.end||'')?p.end:'',amount:+p.amount>0?+p.amount:null};if(ex)Object.assign(ex,v);else a.push({id:Date.now()+n,...v});n++;});
+    if(n){savePlanned(a);done.push('planned changes');}
+  }
+  if(Array.isArray(j.targetsFrom)&&j.targetsFrom.length){
+    const per=allocPeriods();let n=0;
+    j.targetsFrom.forEach(t=>{if(!t||!/^\d{4}-\d{2}$/.test(t.from||''))return;const v={from:t.from,exp:+t.exp,inv:+t.inv,sav:+t.sav,ess:+t.ess,life:+t.life};if(['exp','inv','sav','ess','life'].some(k=>!isFinite(v[k])))return;const i=per.findIndex(x=>x.from===v.from);if(i>=0)per[i]=v;else per.push(v);n++;});
+    if(n){per.sort((a,b)=>a.from.localeCompare(b.from));localStorage.setItem('fos_alloc_from',JSON.stringify(per));done.push('targets');}
+  }
+  if(Array.isArray(j.skipMonths)&&j.skipMonths.length){const s=skipMonths();j.skipMonths.forEach(x=>{if(/^\d{4}-\d{2}$/.test(x))s.add(x);});localStorage.setItem('fos_skip_months',JSON.stringify([...s].sort()));done.push('months away');}
   if(j.notes){
     let notes=[];try{notes=JSON.parse(localStorage.getItem('fos_claude_notes')||'[]')||[];}catch(e){}
     const id=String(j.id||j.createdAt||Date.now());
@@ -2946,7 +3036,7 @@ function monthMix(y,m,maxDay){
 // Up to n complete months before (y,m) that contain data, oldest first.
 function recentMonths(n,y,m){
   const out=[];
-  for(let k=1;k<=n;k++){const a=monthAdd(y,m,-k);const mx=monthMix(a.y,a.m);if(mx.income===0&&mx.spent===0&&mx.invested===0)continue;out.unshift(mx);}
+  for(let k=1,seen=0;seen<n&&k<=24;k++){const a=monthAdd(y,m,-k);if(isSkipped(a.y,a.m))continue;seen++;const mx=monthMix(a.y,a.m);if(mx.income===0&&mx.spent===0&&mx.invested===0)continue;out.unshift(mx);}
   return out;
 }
 // Typical month from the last 3 complete months: essentials and lifestyle without device instalments.
@@ -3017,7 +3107,13 @@ function projectMonth(y,m,b){
     cats[c]=Math.max(b.cat[c]||0,schedEx)+((sched.techCats||{})[c]||0);
   });
   const plan=plannedIn(y,m);let planInv=0,planOnce=0;const planMissing=[],onceItems=[];
-  plan.forEach(p=>{if(!(p.amount>0)){planMissing.push(p.name);return;}if(p.kind==='once'){planOnce+=p.amount;onceItems.push(p);}if(p.cat==='Sobha')planInv+=p.amount;else cats[p.cat]=(cats[p.cat]||0)+p.amount;});
+  // One-offs come on top. A planned monthly cost sets the level of its category: once its real entries
+  // arrive (the nanny's monthly payment), they replace the plan instead of adding to it.
+  const mon={};
+  plan.forEach(p=>{if(!(p.amount>0)){planMissing.push(p.name);return;}
+    if(p.kind==='once'){planOnce+=p.amount;onceItems.push(p);if(p.cat==='Sobha')planInv+=p.amount;else cats[p.cat]=(cats[p.cat]||0)+p.amount;return;}
+    if(p.cat==='Sobha')planInv+=p.amount;else mon[p.cat]=(mon[p.cat]||0)+p.amount;});
+  Object.entries(mon).forEach(([c,v])=>{cats[c]=Math.max(cats[c]||0,v);});
   const sp=splitClass(cats);
   const income=sched.income>0?Math.max(sched.income,b.income):b.income;
   const planIbkr=plannedMonthlyInvest(y);
@@ -3038,7 +3134,7 @@ function outlook(){
 function outlookHtml(){
   const o=outlook();
   if(!o)return '<div class="empty">Needs at least one complete month of entries.</div>';
-  const {b,rows}=o;const tg=getAllocTargets();
+  const {b,rows}=o;const tg=getAllocTargets(rows[0].y,rows[0].m);
   const head=`<tr><th></th>${rows.map(r=>`<th>${mShort(r.y,r.m)}</th>`).join('')}</tr>`;
   const line=(label,f,cls)=>`<tr class="${cls||''}"><td>${label}</td>${rows.map(r=>`<td>${f(r)}</td>`).join('')}</tr>`;
   const pct=(v,r)=>r.income>0?`<div class="muted">${Math.round(v/r.income*100)}%</div>`:'';
@@ -3053,7 +3149,7 @@ function outlookHtml(){
     <tr><td>Cash at month end</td>${cashRow.map(v=>`<td>${fmt0(v)}</td>`).join('')}</tr>
   </table></div>`;
   const notes=[];
-  notes.push(`Typical month = your average of ${b.months.map(x=>mShort(x.y,x.m)).join(', ')}, without device instalments. Entries you already logged for those months and your planned changes come on top.`);
+  notes.push(`Typical month = your average of ${b.months.map(x=>mShort(x.y,x.m)).join(', ')}, without device instalments, plus entries already logged and your planned changes. A planned monthly cost counts once, also after its real entries start.${skipTxt()}`);
   notes.push('Cash at month end starts from today\'s bank balances and adds each month\'s saved cash; the rest of this month is not included.');
   if(rows.some(r=>r.sobhaAssumed))notes.push('* Includes the €1,500 Sobha installment, assumed to continue. Set an end month in Planned changes when you know it.');
   const tech=rows.reduce((s,r)=>s+r.tech,0);
@@ -3077,7 +3173,7 @@ function cushionData(){
   const earTot=ear.reduce((s,p)=>s+p.amount,0);
   // Highest monthly planned addition in the next 6 months (e.g. the nanny once it starts)
   let addMax=0,addEss=0;
-  for(let k=1;k<=6;k++){const a=monthAdd(now.getFullYear(),now.getMonth(),k);let t=0,e=0;plannedIn(a.y,a.m).forEach(p=>{if(p.kind==='monthly'&&p.amount>0&&p.cat!=='Sobha'){t+=p.amount;if(catClass(p.cat)==='essential')e+=p.amount;}});if(t>addMax){addMax=t;addEss=e;}}
+  for(let k=1;k<=6;k++){const a=monthAdd(now.getFullYear(),now.getMonth(),k);const mon={};plannedIn(a.y,a.m).forEach(p=>{if(p.kind==='monthly'&&p.amount>0&&p.cat!=='Sobha')mon[p.cat]=(mon[p.cat]||0)+p.amount;});let t=0,e=0;Object.entries(mon).forEach(([c,v])=>{const x=Math.max(0,v-((b&&b.cat[c])||0));t+=x;if(catClass(c)==='essential')e+=x;});if(t>addMax){addMax=t;addEss=e;}}
   const base=b?b.ess+b.life+addMax:0,essBase=b?b.ess+addEss:0;
   const free=cash-earTot;
   return{b,cash,ear,earTot,free,base,essBase,addMax,need:base*6,months:base>0?free/base:null,essMonths:essBase>0?free/essBase:null,missing:plans.filter(p=>!(p.amount>0))};
@@ -3105,7 +3201,7 @@ function cushionHtml(){
 // ── Expense mix: essentials vs lifestyle, last 4 months ───────────
 // Device instalments sit in their own row, so essentials + lifestyle + instalments = all expenses.
 function mixHtml(){
-  const now=new Date();const tg=getAllocTargets();
+  const now=new Date();const lm=monthAdd(now.getFullYear(),now.getMonth(),-1);const tg=getAllocTargets(lm.y,lm.m);
   const ms=recentMonths(4,now.getFullYear(),now.getMonth());
   if(!ms.length)return '<div class="empty">Needs at least one complete month of entries.</div>';
   const pct=(v,x)=>x.income>0?Math.round(v/x.income*100)+'%':'—';
@@ -3127,12 +3223,12 @@ function mixHtml(){
   const list=rows=>rows.map(([c,v])=>`<div class="mix-line"><span>${esc(catLabel(c))}</span><b>${fmt0(v)}</b></div>`).join('')||'<div class="muted">—</div>';
   return verdict+table+
     `<div class="mix-top"><div><div class="coach-h">Essentials, monthly average</div>${list(topE)}</div><div><div class="coach-h">Lifestyle, monthly average</div>${list(topL)}</div></div>`+
-    `<div class="coach-note">Device instalments pay for earlier purchases, so they sit apart. Choose which categories count as essential under Targets, Edit.</div>`;
+    `<div class="coach-note">Device instalments pay for earlier purchases, so they sit apart. Choose which categories count as essential under Targets, Edit.${skipTxt()}</div>`;
 }
 
 // ── Forward-looking coach lines ───────────────────────────────────
 function aheadItems(){
-  const out=[];const tg=getAllocTargets();const now=new Date();
+  const out=[];const now=new Date();const nx0=monthAdd(now.getFullYear(),now.getMonth(),1);const tg=getAllocTargets(nx0.y,nx0.m);
   const ms=recentMonths(4,now.getFullYear(),now.getMonth()).filter(x=>x.income>0);
   if(ms.length){
     const inc=ms.reduce((s,x)=>s+x.income,0);
@@ -3155,9 +3251,9 @@ function aheadItems(){
   plans.filter(p=>p.kind==='monthly'&&p.cat!=='Sobha').forEach(p=>{
     if(!(p.amount>0)){out.push({k:'info',t:`<b>${esc(p.name)}</b> is planned without an amount. Add your figure in Planned changes to see its effect.`});return;}
     if(!b||!(b.income>0))return;
-    const essNew=(b.ess+p.amount)/b.income*100,lifeRoom=tg.exp-essNew;
+    const extra=catClass(p.cat)==='essential'?Math.max(0,p.amount-(b.cat[p.cat]||0)):0,essNew=(b.ess+extra)/b.income*100,tgP=getAllocTargets(+p.start.slice(0,4),+p.start.slice(5)-1),lifeRoom=tgP.exp-essNew;
     const [py,pm]=p.start.split('-').map(Number);
-    out.push({k:essNew+b.life/b.income*100>tg.exp?'warn':'info',t:`From ${fmtMY(py,pm-1)}, <b>${esc(p.name)}</b> (${fmt0(p.amount)}) lifts essentials to about <b>${Math.round(essNew)}%</b> of income. To keep expenses within ${tg.exp}%, lifestyle has room for ${Math.max(0,Math.round(lifeRoom))}% (${fmt0(Math.max(0,b.income*lifeRoom/100))} a month) vs ${fmt0(b.life)} today.`});
+    out.push({k:essNew+b.life/b.income*100>tgP.exp+0.5?'warn':'info',t:`From ${fmtMY(py,pm-1)}, <b>${esc(p.name)}</b> (${fmt0(p.amount)}) lifts essentials to about <b>${Math.round(essNew)}%</b> of income. To keep expenses within ${tgP.exp}%, lifestyle has room for ${Math.max(0,Math.round(lifeRoom))}% (${fmt0(Math.max(0,b.income*lifeRoom/100))} a month) vs ${fmt0(b.life)} today.`});
   });
   if(!plans.some(p=>p.cat==='Childcare'))out.push({k:'info',t:`Childcare is not in your plan yet. When you know the nanny's start month and cost, add them in Planned changes; I will not guess the amount.`});
   // Outlook and cushion
